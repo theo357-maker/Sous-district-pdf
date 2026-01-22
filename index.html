@@ -26,7 +26,8 @@
     <meta name="theme-color" content="#3498db">
 
     <!-- Service Worker et mise à jour -->
- 
+    <meta name="version" content="2.1.0">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
 
     <!-- Apple Touch Icons -->
     <link rel="apple-touch-icon" href="icon-192x192.png">
@@ -1784,7 +1785,7 @@
     // Enregistrer le Service Worker immédiatement
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('sw.js');
+        const registration = await navigator.serviceWorker.register('/sw.js');
         console.log('✅ Service Worker enregistré avec succès');
         
         // Vérifier les mises à jour toutes les 15 minutes
