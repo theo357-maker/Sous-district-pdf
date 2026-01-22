@@ -1,0 +1,1943 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de Rapports de Répétition</title>
+    
+    <!-- Inclusion des librairies externes pour la génération de PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- Inclusion de Font Awesome pour les icônes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- === CONFIGURATION PWA (POUR L'ÉCRAN D'ACCUEIL ) === -->
+   <!-- PWA Meta Tags -->
+    <meta name="application-name" content="TheoVêt">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="TheoVêt">
+    <meta name="description" content="Solution complète de gestion de commerce de vêtements">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="msapplication-TileColor" content="#3498db">
+    <meta name="msapplication-tap-highlight" content="no">
+    <meta name="theme-color" content="#3498db">
+
+    <!-- Service Worker et mise à jour -->
+ 
+
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167x167.png">
+
+    <!-- Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+<!-- Scripts de mise à jour -->
+<script src="update-system.js"></script>
+
+
+
+    <!-- =================================================== -->
+
+   <style>
+        /* === STYLES GÉNÉRAUX === */
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Segoe UI', 'Times New Roman', Tahoma, Geneva, Verdana, sans-serif; 
+        }
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* === EFFETS DE FOND DÉCORATIFS === */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.1) 2%, transparent 5%),
+                radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.1) 2%, transparent 5%),
+                radial-gradient(circle at 40% 90%, rgba(255, 255, 255, 0.1) 2%, transparent 5%);
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        .main-container {
+            width: 100%;
+            max-width: 950px;
+            background: white;
+            padding: 35px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+        
+        /* === ÉLÉMENT DÉCORATIF EN HAUT === */
+        .main-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, #FFD700, #FFFACD, #FFD700);
+            box-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);
+        }
+        
+        h1 { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            color: #2c3e50; 
+            font-size: 2.2rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+            padding-bottom: 15px;
+        }
+        
+        h1::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #FFD700, transparent);
+        }
+/* Styles pour les notifications de mise à jour */
+        .update-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border-left: 4px solid #3498db;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            padding: 15px 20px;
+            min-width: 300px;
+            max-width: 400px;
+            z-index: 9999;
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+        }
+
+        .update-toast.show {
+            transform: translateX(0);
+        }
+
+        .update-toast.success {
+            border-left-color: #27ae60;
+        }
+
+        .update-toast.warning {
+            border-left-color: #f39c12;
+        }
+
+        .update-toast.danger {
+            border-left-color: #e74c3c;
+        }
+
+
+        /* === STYLES DU FORMULAIRE === */
+        .form-section { 
+            margin-bottom: 25px; 
+            padding: 20px; 
+            border: 1px solid #e0e0e0; 
+            border-radius: 12px; 
+            background: #fff;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            border-left: 4px solid #FFD700;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .form-section:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+        
+        .section-title { 
+            font-weight: 700; 
+            margin-bottom: 20px; 
+            color: #2c3e50; 
+            padding-bottom: 10px; 
+            border-bottom: 2px solid #FFD700;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-title::before {
+            content: '▶';
+            color: #FFD700;
+            font-size: 0.9em;
+        }
+        
+        .form-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); 
+            gap: 20px; 
+        }
+        
+        .form-group { 
+            margin-bottom: 18px; 
+            position: relative;
+        }
+        
+        .form-group label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: 600; 
+            color: #34495e;
+            font-size: 0.95rem;
+        }
+        
+        .form-group input, .form-group textarea, .form-group select { 
+            width: 100%; 
+            padding: 12px 15px; 
+            border: 2px solid #e0e0e0; 
+            border-radius: 8px; 
+            font-size: 15px; 
+            transition: all 0.3s ease;
+            background: #fff;
+        }
+        
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { 
+            outline: none;
+            border-color: #FFD700;
+            box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2);
+        }
+        
+        .form-group textarea { 
+            min-height: 100px; 
+            resize: vertical; 
+        }
+        
+        .optional { 
+            color: #7f8c8d; 
+            font-size: 0.85rem; 
+            font-weight: normal; 
+        }
+
+        /* === STYLES DES TABLEAUX === */
+        table { 
+            width: 100%; 
+            border-collapse: separate; 
+            border-spacing: 0;
+            margin-bottom: 20px; 
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        table th, table td { 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            text-align: left; 
+        }
+        
+        table th { 
+            background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+            font-weight: 700; 
+            color: #2c3e50;
+            border-bottom: 2px solid #FFD700;
+        }
+        
+        table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        table tr:hover {
+            background-color: #fffacd;
+        }
+        
+        table input { 
+            width: 100%; 
+            padding: 8px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            font-size: 14px; 
+            background: white; 
+            transition: all 0.3s ease;
+        }
+        
+        table input:focus { 
+            border-color: #FFD700;
+            box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
+        }
+
+        /* === STYLES DES BOUTONS === */
+        .button-container { 
+            display: flex; 
+            justify-content: center; 
+            margin-top: 35px; 
+            gap: 20px; 
+            flex-wrap: wrap;
+        }
+        
+        .btn { 
+            padding: 15px 35px; 
+            border: none; 
+            border-radius: 50px; 
+            font-size: 16px; 
+            font-weight: 700; 
+            cursor: pointer; 
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            overflow: hidden;
+            min-width: 200px;
+            justify-content: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.7s;
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        .btn-generate { 
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white; 
+        }
+        
+        .btn-generate:hover {
+            background: linear-gradient(135deg, #34495e, #2c3e50);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(44, 62, 80, 0.3);
+        }
+        
+        .btn-reset { 
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white; 
+        }
+        
+        .btn-reset:hover {
+            background: linear-gradient(135deg, #495057, #6c757d);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(108, 117, 125, 0.3);
+        }
+        
+        .btn i {
+            font-size: 1.2em;
+        }
+
+        /* === STYLES POUR LE TEMPLATE PDF (CACHÉ) === */
+        #pdf-template {
+            width: 220mm; /* Format A4 */
+            height: 230mm; /* Format A4 */
+            padding: 8mm;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 12px;
+            box-sizing: border-box;
+            position: absolute;
+            left: -9999px; /* Cache l'élément hors de l'écran */
+            background: white;
+            color: black;
+            border: 4px solid black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .pdf-main-content {
+            width: 100%;
+            height: 100%;
+            border: 1px solid black;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        .pdf-header-container { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 10px; }
+        .pdf-header-left { display: flex; align-items: center; }
+        .pdf-logo-container { width: 50px; height: 50px; margin-right: 10px; display: flex; justify-content: center; align-items: center; }
+        #pdf-logo-img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .pdf-logo-text { font-size: 11px; line-height: 1.2; }
+        .pdf-header-right { text-align: right; font-weight: bold; font-size: 11px; }
+        .pdf-header-right div { margin-bottom: 2px; }
+        .pdf-main-title { text-align: center; font-weight: bold; font-size: 15px; margin: 5px 0 10px 0; text-decoration: underline; padding: 2px 0; }
+        .pdf-body-container { display: flex; flex-grow: 1; border-top: 1px solid black; }
+        .pdf-left-column { width: 58%; padding: 10px 10px 0 0; border-right: 1px solid black; }
+        .pdf-right-column { width: 42%; padding: 10px 0 0 10px; position: relative; display: flex; flex-direction: column; }
+        .pdf-section { margin-bottom: 10px; }
+        .pdf-section-title { font-weight: bold; margin-bottom: 5px; }
+        .pdf-field { margin-bottom: 8px; }
+        .pdf-dotted-line { 
+            border-bottom: 1px dotted black; 
+            display: inline-block; 
+            min-height: 16px; 
+            vertical-align: bottom; 
+            padding: 0 3px; 
+            font-family: 'century schoolbook', sans-serif;
+            font-size: 15px;
+            font-weight: bold;
+            color: #111;
+        }
+        .pdf-cantiques-list { padding-left: 15px; }
+        .pdf-cantiques-list .pdf-field { margin-bottom: 5px; }
+        .pdf-tech-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; border: 1px solid black; padding: 8px; }
+        .pdf-tech-item { display: flex; align-items: center; font-size: 10px; }
+        .pdf-checkbox { width: 11px; height: 11px; margin-right: 5px; display: flex; justify-content: center; align-items: center; font-weight: bold; border: 1px solid black;}
+        
+        /* MODIFIÉ: Style du tableau des effectifs pour ressembler à l'image */
+        .pdf-effectifs-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 5px; 
+            font-size: 10px; 
+        }
+        .pdf-effectifs-table th, .pdf-effectifs-table td { 
+            border: 1px solid black; 
+            padding: 4px; 
+            text-align: center; 
+            height: 20px; 
+        }
+        .pdf-effectifs-table th { 
+            background-color: #A9C4E2; 
+            color: black; 
+            font-weight: bold; 
+            font-size: 9px;
+        }
+        .pdf-effectifs-table td { 
+            font-family: 'Times New Roman', Times, serif; 
+            font-size: 10px; 
+            font-weight: normal; 
+        }
+        .pdf-effectifs-table td:first-child { 
+            text-align: center; 
+        }
+        .pdf-effectifs-table .communaute-cell {
+            text-align: left;
+            padding-left: 5px;
+            font-weight: normal;
+        }
+        .pdf-effectifs-table .orchestre-row td { 
+            background-color: #A9C4E2; 
+            color: black; 
+            font-weight: bold; 
+        }
+        .pdf-effectifs-table .total-row td { 
+            background-color: #A9C4E2; 
+            color: black; 
+            font-weight: bold; 
+            text-align: right; 
+            padding-right: 5px; 
+        }
+        .pdf-effectifs-table .total-row td:last-child { 
+            background-color: white; 
+            text-align: center; 
+        }
+        
+        .pdf-footer { margin-top: auto; padding-bottom: 10px; align-self: flex-end; width: 100%; }
+        .pdf-rapporteur-section { text-align: center; }
+        
+        /* MODIFIÉ: Style pour le conteneur de la signature */
+        #pdf-signature-container { 
+            height: 40px; /* Hauteur fixe pour l'espace de la signature */
+            margin-bottom: 5px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+        }
+        #pdf-signature-img { 
+            max-width: 150px; /* Largeur maximale de l'image */
+            max-height: 40px; /* Hauteur maximale de l'image */
+            object-fit: contain; /* Assure que l'image s'adapte sans être déformée */
+        }
+        .pdf-rapporteur-section .pdf-dotted-line { 
+            width: 130px; 
+            margin-top: 8px; /* Réduit l'espace au-dessus du nom */
+        }
+
+        /* === STYLES DIVERS === */
+        a { color:white; text-decoration: none; }
+        i { color: #075E54; }
+        
+        /* === STYLES AMÉLIORÉS POUR LES BOUTONS EXISTANTS === */
+        #ftr {
+            border-radius: 12px;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+            min-height: 8vh;
+            padding: 15px;
+            margin: 25px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+        
+        #gestionnairePDF {
+            font-size: 18px;
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            padding: 12px 25px;
+            margin: 0;
+            border: 0; 
+            border-radius: 30px; 
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        
+        #gestionnairePDF:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+            background: linear-gradient(135deg, #34495e, #2c3e50);
+        }
+        
+        h2 button {
+            font-size: 18px;
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            padding: 12px 25px;
+            border: 0; 
+            border-radius: 30px; 
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        
+        h2 button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+            background: linear-gradient(135deg, #128C7E, #25D366);
+        }
+        
+        /* === BADGE D'INDICATEUR === */
+        .badge {
+            display: inline-block;
+            padding: 5px 15px;
+            background: linear-gradient(135deg, #FFD700, #FFFACD);
+            color: #2c3e50;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-left: 10px;
+            box-shadow: 0 2px 5px rgba(255, 215, 0, 0.3);
+            border: 1px solid rgba(255, 215, 0, 0.5);
+        }
+        
+        /* === ICÔNES DANS LES LABELS === */
+        .form-group label i {
+            color: #FFD700;
+            margin-right: 8px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        /* === ANIMATION DE CHARGEMENT === */
+        .loading-spinner {
+            display: none;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #FFD700;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* === CARDS DÉCORATIVES === */
+        .feature-card {
+            background: linear-gradient(135deg, #fff, #fffacd);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 2px solid #FFD700;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.1) 10%, transparent 70%);
+        }
+        
+        /* === LOGO STYLÉ === */
+        img[type="logo"] {
+            display: block;
+            margin: 0 auto 20px;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+            transition: transform 0.3s ease;
+            border-radius: 10px;
+            border: 3px solid #FFD700;
+            padding: 5px;
+            background: white;
+        }
+        
+        img[type="logo"]:hover {
+            transform: scale(1.05);
+        }
+
+        /* === CHECKBOX STYLÉS === */
+        .form-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            accent-color: #FFD700;
+            cursor: pointer;
+            vertical-align: middle;
+        }
+        
+        .form-group label {
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        /* === RESPONSIVE DESIGN === */
+        @media (max-width: 768px) {
+            body {
+                padding: 20px;
+            }
+            
+            .main-container {
+                padding: 20px;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .button-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .form-section {
+                padding: 15px;
+            }
+            
+            .section-title {
+                font-size: 1.1rem;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Style pour la notification de mise à jour */
+        .notification-update {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            z-index: 1001; /* Au-dessus de tout le reste */
+            display: none; /* Caché par défaut */
+            align-items: center;
+            gap: 20px;
+            border: 2px solid #FFD700;
+            min-width: 300px;
+            max-width: 90%;
+        }
+
+        .notification-update.show {
+            display: flex; /* Affiché quand la classe 'show' est ajoutée */
+            animation: slideUp 0.5s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateX(-50%) translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        #update-btn {
+            padding: 10px 20px;
+            border: none;
+            background: linear-gradient(135deg, #FFD700, #FFFACD);
+            color: #2c3e50;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        #update-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            background: linear-gradient(135deg, #FFFACD, #FFD700);
+        }
+        
+        /* === INDICATEUR DE PROGRESSION === */
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #f0f0f0;
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 10px 0;
+            display: none;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FFD700, #FFFACD);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        /* === TOOLTIPS === */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            margin-left: 5px;
+        }
+        
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #2c3e50;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border: 1px solid #FFD700;
+        }
+        
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #2c3e50 transparent transparent transparent;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+
+        <!-- ================================== -->
+        <!-- NOTIFICATION DE MISE À JOUR        -->
+        <!-- ================================== -->
+        <div id="update-notification" class="notification-update">
+            <span>Une nouvelle version est disponible !</span>
+            <button id="update-btn">Mettre à jour</button>
+        </div>
+
+        <!-- Logo avec style amélioré -->
+        <img type="logo" src="R.png" width="240px" height="130px" alt="Logo principal">
+        
+        <!-- Titre principal avec badge -->
+        <h1>
+            Générateur de Rapports de Répétition 
+            <span class="badge">Ena sud-est🇨🇩</span>
+        </h1>
+        
+        <!-- Carte d'information -->
+        <div class="feature-card">
+            <h3 style="color: #2c3e50; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-info-circle" style="color: #FFD700;"></i>
+                Information Importante
+            </h3>
+            <p style="color: #34495e; line-height: 1.6;">
+                Remplissez tous les champs obligatoires marqués d'un <span style="color: #FFD700; font-weight: bold;">*</span>.
+                Le système calculera automatiquement les totaux des effectifs. 
+                Vous pouvez ajouter votre logo et signature pour personnaliser le PDF.
+            </p>
+        </div>
+
+        <div id="ftr">
+            <button id="gestionnairePDF">
+                <i class="fas fa-folder-open"></i>
+                <a href="gestionnaire.html">Gestionnaire PDF</a>
+            </button>
+        </div>
+        
+        <h2>
+            <button type="button" onclick="window.open('https://wa.me/971877758', '_blank' );">
+                <i class="fa-brands fa-whatsapp"></i>
+                Contactez-nous pour assistance
+            </button>
+        </h2>
+        
+        <!-- Barre de progression pour la génération PDF -->
+        <div class="progress-bar" id="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        
+        <!-- Spinner de chargement -->
+        <div class="loading-spinner" id="loading-spinner"></div>
+        
+        <form id="reportForm" onsubmit="return false;">
+            
+            <!-- Section Logo -->
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="fas fa-image"></i>
+                    Logo de l'organisation
+                </div>
+                <div class="form-group">
+                    <label for="logoUpload">
+                        <i class="fas fa-upload"></i>
+                        Choisissez un fichier image (PNG, JPG):
+                    </label>
+                    <input type="file" id="logoUpload" name="logoUpload" accept="image/png, image/jpeg">
+                    <div class="tooltip">
+                        <i class="fas fa-question-circle" style="color: #FFD700;"></i>
+                        <span class="tooltiptext">
+                            Taille recommandée : 200x200px. Formats acceptés : PNG, JPG.
+                            Le logo apparaîtra dans l'en-tête du rapport PDF.
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations d'en-tête -->
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="fas fa-heading"></i>
+                    Informations d'en-tête
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="district">
+                            <i class="fas fa-map-marker-alt"></i>
+                            District:
+                        </label>
+                        <input type="text" id="district" name="district" placeholder="Ex: District de Lubumbashi">
+                    </div>
+                    <div class="form-group">
+                        <label for="sousDistrict">
+                            <i class="fas fa-map-marked-alt"></i>
+                            Sous-district:
+                        </label>
+                        <input type="text" id="sousDistrict" name="sousDistrict" placeholder="Ex: Sous-district Nord">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations sur la répétition -->
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="fas fa-calendar-alt"></i>
+                    Informations sur la répétition
+                    <span style="color: #FFD700; font-size: 0.9em; margin-left: 10px;">* Champs requis</span>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="date">
+                            <i class="fas fa-calendar-day"></i>
+                            Date: <span class="optional">(requis)</span>
+                        </label>
+                        <input type="date" id="date" name="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="heureDebut">
+                            <i class="fas fa-clock"></i>
+                            Heure de début:
+                        </label>
+                        <input type="time" id="heureDebut" name="heureDebut">
+                    </div>
+                    <div class="form-group">
+                        <label for="heureFin">
+                            <i class="fas fa-clock"></i>
+                            Heure de fin:
+                        </label>
+                        <input type="time" id="heureFin" name="heureFin">
+                    </div>
+                    <div class="form-group">
+                        <label for="lieu">
+                            <i class="fas fa-map-pin"></i>
+                            Lieu:
+                        </label>
+                        <input type="text" id="lieu" name="lieu" placeholder="Ex: Salle de répétition principale">
+                    </div>
+                    <div class="form-group">
+                        <label for="tenuePar">
+                            <i class="fas fa-user-tie"></i>
+                            Tenue par: <span class="optional">(requis)</span>
+                        </label>
+                        <input type="text" id="tenuePar" name="tenuePar" required placeholder="Nom du responsable">
+                    </div>
+                    <div class="form-group">
+                        <label for="assistePar1">
+                            <i class="fas fa-users"></i>
+                            Assisté par 1:
+                        </label>
+                        <input type="text" id="assistePar1" name="assistePar1" placeholder="Premier assistant">
+                    </div>
+                    <div class="form-group">
+                        <label for="assistePar2">
+                            <i class="fas fa-users"></i>
+                            Assisté par 2:
+                        </label>
+                        <input type="text" id="assistePar2" name="assistePar2" placeholder="Deuxième assistant">
+                    </div>
+                    <div class="form-group">
+                        <label for="assistePar3">
+                            <i class="fas fa-users"></i>
+                            Assisté par 3:
+                        </label>
+                        <input type="text" id="assistePar3" name="assistePar3" placeholder="Troisième assistant">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cantiques -->
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="fas fa-music"></i>
+                    Cantiques
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="cantiqueAppris1">
+                            <i class="fas fa-graduation-cap"></i>
+                            Cantique appris 1:
+                        </label>
+                        <input type="text" id="cantiqueAppris1" name="cantiqueAppris1" placeholder="N° et titre">
+                    </div>
+                    <div class="form-group">
+                        <label for="cantiqueAppris2">
+                            <i class="fas fa-graduation-cap"></i>
+                            Cantique appris 2:
+                        </label>
+                        <input type="text" id="cantiqueAppris2" name="cantiqueAppris2" placeholder="N° et titre">
+                    </div>
+                    <div class="form-group">
+                        <label for="cantiqueAppris3">
+                            <i class="fas fa-graduation-cap"></i>
+                            Cantique appris 3:
+                        </label>
+                        <input type="text" id="cantiqueAppris3" name="cantiqueAppris3" placeholder="N° et titre">
+                    </div>
+                    <div class="form-group">
+                        <label for="cantiqueRepete1">
+                            <i class="fas fa-redo"></i>
+                            Cantique répété 1:
+                        </label>
+                        <input type="text" id="cantiqueRepete1" name="cantiqueRepete1" placeholder="N° et titre">
+                    </div>
+                    <div class="form-group">
+                        <label for="cantiqueRepete2">
+                            <i class="fas fa-redo"></i>
+                            Cantique répété 2:
+                        </label>
+                        <input type="text" id="cantiqueRepete2" name="cantiqueRepete2" placeholder="N° et titre">
+                    </div>
+                    <div class="form-group">
+                        <label for="cantiqueRepete3">
+                            <i class="fas fa-redo"></i>
+                            Cantique répété 3:
+                        </label>
+                        <input type="text" id="cantiqueRepete3" name="cantiqueRepete3" placeholder="N° et titre">
+                    </div>
+                    <div class="form-group">
+                        <label for="cantiqueArrange1">
+                            <i class="fas fa-sliders-h"></i>
+                            Cantique arrangé 1:
+                        </label>
+                        <input type="text" id="cantiqueArrange1" name="cantiqueArrange1" placeholder="N° et titre">
+                    </div>
+                    <div class="form-group">
+                        <label for="cantiqueArrange2">
+                            <i class="fas fa-sliders-h"></i>
+                            Cantique arrangé 2:
+                        </label>
+                        <input type="text" id="cantiqueArrange2" name="cantiqueArrange2" placeholder="N° et titre">
+                    </div>
+                    <div class="form-group">
+                        <label for="cantiqueArrange3">
+                            <i class="fas fa-sliders-h"></i>
+                            Cantique arrangé 3:
+                        </label>
+                        <input type="text" id="cantiqueArrange3" name="cantiqueArrange3" placeholder="N° et titre">
+                    </div>
+                    <div class="form-group">
+                        <label for="cantiqueArrange4">
+                            <i class="fas fa-sliders-h"></i>
+                            Cantique arrangé 4:
+                        </label>
+                        <input type="text" id="cantiqueArrange4" name="cantiqueArrange4" placeholder="N° et titre">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Objectif opérationnel -->
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="fas fa-bullseye"></i>
+                    Objectif opérationnel
+                </div>
+                <div class="form-group">
+                    <textarea id="objectif" name="objectif" placeholder="Décrivez l'objectif principal de cette répétition..."></textarea>
+                </div>
+            </div>
+
+            <!-- Détails techniques -->
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="fas fa-cogs"></i>
+                    Détails techniques appliquées
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" name="phrases_check">
+                            <i class="fas fa-quote-right"></i>
+                            Phrasés
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" name="nuance_check">
+                            <i class="fas fa-sliders-h"></i>
+                            Nuance
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" name="modulation_check">
+                            <i class="fas fa-exchange-alt"></i>
+                            Modulation
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" name="diction_check">
+                            <i class="fas fa-comment-alt"></i>
+                            Diction
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" name="lecturePartition_check">
+                            <i class="fas fa-music"></i>
+                            Lecture partition
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" name="tempo_check">
+                            <i class="fas fa-tachometer-alt"></i>
+                            Tempo & Changement
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" name="style_check">
+                            <i class="fas fa-palette"></i>
+                            Style
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" name="expression_check">
+                            <i class="fas fa-theater-masks"></i>
+                            Expression
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Effectifs -->
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="fas fa-users"></i>
+                    Effectifs
+                    <div class="tooltip">
+                        <i class="fas fa-question-circle" style="color: #FFD700; margin-left: 10px;"></i>
+                        <span class="tooltiptext">
+                            Les totaux sont calculés automatiquement. 
+                            Laissez vide les communautés non concernées.
+                            Les totaux de l'orchestre sont ajoutés au total général.
+                        </span>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>N°</th>
+                            <th>COMMUNAUTÉ</th>
+                            <th>FRÈRES</th>
+                            <th>SŒURS</th>
+                            <th>TOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td><input type="text" name="communaute1" placeholder="Nom communauté"></td>
+                            <td><input type="number" name="freres1" min="0" placeholder="0"></td>
+                            <td><input type="number" name="soeurs1" min="0" placeholder="0"></td>
+                            <td><input type="number" name="total1" min="0" readonly></td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td><input type="text" name="communaute2" placeholder="Nom communauté"></td>
+                            <td><input type="number" name="freres2" min="0" placeholder="0"></td>
+                            <td><input type="number" name="soeurs2" min="0" placeholder="0"></td>
+                            <td><input type="number" name="total2" min="0" readonly></td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td><input type="text" name="communaute3" placeholder="Nom communauté"></td>
+                            <td><input type="number" name="freres3" min="0" placeholder="0"></td>
+                            <td><input type="number" name="soeurs3" min="0" placeholder="0"></td>
+                            <td><input type="number" name="total3" min="0" readonly></td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td><input type="text" name="communaute4" placeholder="Nom communauté"></td>
+                            <td><input type="number" name="freres4" min="0" placeholder="0"></td>
+                            <td><input type="number" name="soeurs4" min="0" placeholder="0"></td>
+                            <td><input type="number" name="total4" min="0" readonly></td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td><input type="text" name="communaute5" placeholder="Nom communauté"></td>
+                            <td><input type="number" name="freres5" min="0" placeholder="0"></td>
+                            <td><input type="number" name="soeurs5" min="0" placeholder="0"></td>
+                            <td><input type="number" name="total5" min="0" readonly></td>
+                        </tr>
+                        <tr class="orchestre-row">
+                            <td></td>
+                            <td>ORCHESTRE</td>
+                            <td><input type="number" name="orchestre_freres" min="0" placeholder="0"></td>
+                            <td><input type="number" name="orchestre_soeurs" min="0" placeholder="0"></td>
+                            <td><input type="number" name="orchestre_total" min="0" readonly></td>
+                        </tr>
+                        <tr class="total-row">
+                            <td></td>
+                            <td colspan="3"><strong>TOTAL GÉNÉRAL</strong></td>
+                            <td><input type="number" name="totalGeneral" id="totalGeneral" readonly></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Remarques -->
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="fas fa-sticky-note"></i>
+                    Remarques
+                </div>
+                <div class="form-group">
+                    <textarea id="remarques" name="remarques" placeholder="Ajoutez ici vos remarques ou observations supplémentaires..."></textarea>
+                </div>
+            </div>
+
+            <!-- Rapporteur -->
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="fas fa-user-edit"></i>
+                    Rapporteur
+                    <span style="color: #FFD700; font-size: 0.9em; margin-left: 10px;">* Champ requis</span>
+                </div>
+                <div class="form-group">
+                    <label for="rapporteur">
+                        <i class="fas fa-signature"></i>
+                        Nom du Rapporteur: <span class="optional">(requis)</span>
+                    </label>
+                    <input type="text" id="rapporteur" name="rapporteur" required placeholder="Nom complet du rapporteur">
+                </div>
+                <div class="form-group">
+                    <label for="signatureUpload">
+                        <i class="fas fa-file-signature"></i>
+                        Signature du Rapporteur (fichier image):
+                    </label>
+                    <input type="file" id="signatureUpload" name="signatureUpload" accept="image/png, image/jpeg">
+                    <div class="tooltip">
+                        <i class="fas fa-question-circle" style="color: #FFD700;"></i>
+                        <span class="tooltiptext">
+                            Taille recommandée : 150x40px. Formats acceptés : PNG, JPG.
+                            Votre signature apparaîtra dans le bas du rapport PDF.
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Boutons d'action -->
+            <div class="button-container">
+                <button type="button" id="generateBtn" class="btn btn-generate">
+                    <i class="fas fa-file-pdf"></i>
+                    Générer le PDF
+                </button>
+                <button type="reset" class="btn btn-reset">
+                    <i class="fas fa-redo"></i>
+                    Réinitialiser le formulaire
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- =================== TEMPLATE PDF (ÉLÉMENT CACHÉ) ================== -->
+    <!-- =================================================================== -->
+    <div id="pdf-template">
+        <div class="pdf-main-content">
+            <div class="pdf-header-container">
+                <div class="pdf-header-left">
+                    <div class="pdf-logo-container"><img id="pdf-logo-img" src="R.png" alt="Logo"></div>
+                    <div class="pdf-logo-text"><div>Église néo-apostolique</div><div>RDC Sud-Est</div></div>
+                </div>
+                <div class="pdf-header-right">
+                    <div>EGLISE NÉO-APOSTOLIQUE DE LA RDC SUD-EST</div><div>RÉGION APOSTOLIQUE DU SUD</div><div>CAA DE LUBUMBASHI NORD</div>
+                    <div>DISTRICT DE : <span id="pdf-district" class="pdf-dotted-line" style="width:150px;"></span></div>
+                    <div>SOUS-DISTRICT DE : <span id="pdf-sousDistrict" class="pdf-dotted-line" style="width:128px;"></span></div>
+                    
+                </div>
+            </div>
+            <div class="pdf-main-title">RAPPORT DE LA RÉPÉTITION</div>
+            <div class="pdf-body-container">
+                <div class="pdf-left-column">
+                    <div class="pdf-section">
+                        <div class="pdf-field">Jour & Date : <span id="pdf-jourDate" class="pdf-dotted-line" style="width: 250px;"></span></div>
+                        <div class="pdf-field">Heure : de <span id="pdf-heureDebut" class="pdf-dotted-line" style="width: 80px;"></span> à <span id="pdf-heureFin" class="pdf-dotted-line" style="width: 80px;"></span></div>
+                        <div class="pdf-field">Lieu : <span id="pdf-lieu" class="pdf-dotted-line" style="width: 300px;"></span></div>
+                        <div class="pdf-field">Tenue par : <span id="pdf-tenuePar" class="pdf-dotted-line" style="width: 275px;"></span></div>
+                        <div class="pdf-field">Assisté par : 1. <span id="pdf-assistePar1" class="pdf-dotted-line" style="width: 260px;"></span></div>
+                        <div class="pdf-field" style="padding-left: 88px;">2. <span id="pdf-assistePar2" class="pdf-dotted-line" style="width: 260px;"></span></div>
+                        <div class="pdf-field" style="padding-left: 88px;">3. <span id="pdf-assistePar3" class="pdf-dotted-line" style="width: 260px;"></span></div>
+                    </div>
+                    <div class="pdf-section">
+                        <div class="pdf-section-title">Cantiques appris :</div>
+                        <div class="pdf-cantiques-list">
+                            <div class="pdf-field">1. <span id="pdf-cantiqueAppris1" class="pdf-dotted-line" style="width: 300px;"></span></div>
+                            <div class="pdf-field">2. <span id="pdf-cantiqueAppris2" class="pdf-dotted-line" style="width: 300px;"></span></div>
+                            <div class="pdf-field">3. <span id="pdf-cantiqueAppris3" class="pdf-dotted-line" style="width: 300px;"></span></div>
+                        </div>
+                    </div>
+                    <div class="pdf-section">
+                        <div class="pdf-section-title">Cantiques répétés :</div>
+                        <div class="pdf-cantiques-list">
+                            <div class="pdf-field">1. <span id="pdf-cantiqueRepete1" class="pdf-dotted-line" style="width: 300px;"></span></div>
+                            <div class="pdf-field">2. <span id="pdf-cantiqueRepete2" class="pdf-dotted-line" style="width: 300px;"></span></div>
+                            <div class="pdf-field">3. <span id="pdf-cantiqueRepete3" class="pdf-dotted-line" style="width: 300px;"></span></div>
+                        </div>
+                    </div>
+                    <div class="pdf-section">
+                        <div class="pdf-section-title">Cantiques arrangés :</div>
+                        <div class="pdf-cantiques-list">
+                            <div class="pdf-field">1. <span id="pdf-cantiqueArrange1" class="pdf-dotted-line" style="width: 300px;"></span></div>
+                            <div class="pdf-field">2. <span id="pdf-cantiqueArrange2" class="pdf-dotted-line" style="width: 300px;"></span></div>
+                            <div class="pdf-field">3. <span id="pdf-cantiqueArrange3" class="pdf-dotted-line" style="width: 300px;"></span></div>
+                            <div class="pdf-field">4. <span id="pdf-cantiqueArrange4" class="pdf-dotted-line" style="width: 300px;"></span></div>
+                        </div>
+                    </div>
+                    <div class="pdf-section">
+                        <div class="pdf-section-title">Objectif opérationnel de la répétition :</div>
+                        <div id="pdf-objectif" class="pdf-dotted-line" style="width: 100%; min-height: 40px; display: block;"></div>
+                    </div>
+                </div>
+                <div class="pdf-right-column">
+                    <div class="pdf-section">
+                        <div class="pdf-section-title">Détails techniques appliquées:</div>
+                        <div class="pdf-tech-grid">
+                            <div class="pdf-tech-item"><div id="pdf-phrases_check" class="pdf-checkbox"></div>Phrasés</div>
+                            <div class="pdf-tech-item"><div id="pdf-nuance_check" class="pdf-checkbox"></div>Nuance</div>
+                            <div class="pdf-tech-item"><div id="pdf-modulation_check" class="pdf-checkbox"></div>Modulation</div>
+                            <div class="pdf-tech-item"><div id="pdf-diction_check" class="pdf-checkbox"></div>Diction</div>
+                            <div class="pdf-tech-item"><div id="pdf-lecturePartition_check" class="pdf-checkbox"></div>Lecture partition</div>
+                            <div class="pdf-tech-item"><div id="pdf-tempo_check" class="pdf-checkbox"></div>Tempo</div>
+                            <div class="pdf-tech-item"><div id="pdf-style_check" class="pdf-checkbox"></div>Style</div>
+                            <div class="pdf-tech-item"><div id="pdf-expression_check" class="pdf-checkbox"></div>Expression</div>
+                        </div>
+                    </div>
+                    <div class="pdf-section">
+                        <div class="pdf-section-title">Effectifs :</div>
+                        <table class="pdf-effectifs-table">
+                            <thead><tr><th>N°</th><th>COMMUNAUTÉ</th><th>FRÈRES</th><th>SŒURS</th><th>TOTAL</th></tr></thead>
+                            <tbody>
+                                <tr><td>1</td><td class="communaute-cell" id="pdf-communaute1"></td><td id="pdf-freres1"></td><td id="pdf-soeurs1"></td><td id="pdf-total1"></td></tr>
+                                <tr><td>2</td><td class="communaute-cell" id="pdf-communaute2"></td><td id="pdf-freres2"></td><td id="pdf-soeurs2"></td><td id="pdf-total2"></td></tr>
+                                <tr><td>3</td><td class="communaute-cell" id="pdf-communaute3"></td><td id="pdf-freres3"></td><td id="pdf-soeurs3"></td><td id="pdf-total3"></td></tr>
+                                <tr><td>4</td><td class="communaute-cell" id="pdf-communaute4"></td><td id="pdf-freres4"></td><td id="pdf-soeurs4"></td><td id="pdf-total4"></td></tr>
+                                <tr><td>5</td><td class="communaute-cell" id="pdf-communaute5"></td><td id="pdf-freres5"></td><td id="pdf-soeurs5"></td><td id="pdf-total5"></td></tr>
+                                <tr class="orchestre-row"><td></td><td>ORCHESTRE</td><td id="pdf-orchestre_freres"></td><td id="pdf-orchestre_soeurs"></td><td id="pdf-orchestre_total"></td></tr>
+                                <tr class="total-row"><td></td><td colspan="3">TOTAL GÉNÉRAL</td><td id="pdf-totalGeneral"></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pdf-section">
+                        <div class="pdf-section-title">Remarques :</div>
+                        <div id="pdf-remarques" class="pdf-dotted-line" style="width: 100%; min-height: 60px; display: block;"></div>
+                    </div>
+                    <div class="pdf-footer">
+                        <div class="pdf-rapporteur-section">
+                            <div>Rapporteur</div>
+                            <!-- MODIFIÉ: Le nom du rapporteur est maintenant au-dessus de la signature -->
+                            <div id="pdf-rapporteur" class="pdf-dotted-line"></div>
+                            <!-- Conteneur pour l'image de la signature -->
+                            <div id="pdf-signature-container">
+                                <img id="pdf-signature-img" src="" alt="Signature">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialisation de la librairie jsPDF
+            const { jsPDF } = window.jspdf;
+
+            // Récupération des éléments du DOM
+            const form = document.getElementById('reportForm');
+            const generateBtn = document.getElementById('generateBtn');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const progressBar = document.getElementById('progress-bar');
+            const progressFill = document.getElementById('progress-fill');
+            
+            // Sélecteurs pour les effectifs (communautés et orchestre)
+            const effectifInputs = document.querySelectorAll('input[name^="freres"], input[name^="soeurs"], input[name^="orchestre_"]');
+            const communauteInputs = document.querySelectorAll('input[name^="communaute"]');
+            const totalInputs = document.querySelectorAll('input[name^="total"], input[name="orchestre_total"]');
+            const totalGeneralInput = document.getElementById('totalGeneral');
+            
+            // Éléments pour le logo
+            const logoUploadInput = document.getElementById('logoUpload');
+            const pdfLogoImg = document.getElementById('pdf-logo-img');
+            
+            // Éléments pour la signature
+            const signatureUploadInput = document.getElementById('signatureUpload');
+            const pdfSignatureImg = document.getElementById('pdf-signature-img');
+
+            // Variables pour stocker les données des images (DataURL)
+            let logoDataUrl = 'R.png'; // Chemin vers le logo par défaut
+            let signatureDataUrl = ''; // La signature est vide par défaut
+
+            // Initialise l'image du logo dans le template PDF avec la valeur par défaut
+            pdfLogoImg.src = logoDataUrl;
+
+            // --- GESTIONNAIRES D'ÉVÉNEMENTS ---
+
+            // 1. Gère le changement de fichier pour le logo
+            logoUploadInput.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        logoDataUrl = e.target.result; // Stocke l'image en DataURL
+                        pdfLogoImg.src = logoDataUrl;   // Met à jour l'aperçu dans le template
+                        showNotification('Logo mis à jour avec succès!', 'success');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // 2. Gère le changement de fichier pour la signature
+            signatureUploadInput.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        signatureDataUrl = e.target.result; // Stocke l'image en DataURL
+                        pdfSignatureImg.src = signatureDataUrl; // Met à jour l'aperçu dans le template
+                        showNotification('Signature ajoutée avec succès!', 'success');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // 3. Calcule les totaux pour chaque communauté
+            effectifInputs.forEach(input => input.addEventListener('input', function() {
+                calculateCommunauteTotal(this);
+                calculateOrchestreTotal();
+                calculateGeneralTotal();
+            }));
+
+            // 4. Gère le clic sur le bouton "Générer le PDF" - VERSION OPTIMISÉE
+            generateBtn.addEventListener('click', async function() {
+                // Vérifie si les champs requis du formulaire sont remplis
+                if (!form.checkValidity()) {
+                    showNotification('Veuillez remplir tous les champs obligatoires marqués d\'un astérisque (*).', 'error');
+                    form.reportValidity(); // Affiche les messages de validation du navigateur
+                    return;
+                }
+
+                // Affiche l'indicateur de progression
+                loadingSpinner.style.display = 'block';
+                progressBar.style.display = 'block';
+                progressFill.style.width = '10%';
+
+                // Désactive le bouton pour éviter les clics multiples
+                const originalText = generateBtn.innerHTML;
+                generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Génération en cours...';
+                generateBtn.disabled = true;
+
+                try {
+                    // Remplit le template PDF avec les données du formulaire
+                    fillPdfTemplate();
+                    progressFill.style.width = '30%';
+
+                    // Configuration optimisée pour html2canvas
+                    const canvas = await html2canvas(document.getElementById('pdf-template'), {
+                        scale: 2, // Échelle réduite pour une génération plus rapide (2 au lieu de 3)
+                        useCORS: true,
+                        logging: false,
+                        backgroundColor: '#ffffff',
+                        removeContainer: true,
+                        allowTaint: true,
+                        onclone: function(clonedDoc) {
+                            progressFill.style.width = '60%';
+                        }
+                    });
+
+                    progressFill.style.width = '80%';
+                    
+                    const imgData = canvas.toDataURL('image/png', 0.9); // Compression de 90% pour un fichier plus léger
+                    const pdf = new jsPDF('p', 'mm', 'a4');
+
+                    // Ajoute l'image générée au PDF
+                    const imgWidth = 210; // Largeur A4 en mm
+                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+
+                    // Crée un nom de fichier dynamique
+                    const date = new Date().toISOString().split('T')[0];
+                    const district = document.getElementById('district').value || 'INCONNUE';
+                    const fileName = `RAPPORT_REPETITION_${district.replace(/\s+/g, '_').toUpperCase()}_${date}.pdf`;
+                    
+                    // Finalisation de la progression
+                    progressFill.style.width = '100%';
+                    
+                    // Sauvegarde le fichier PDF IMMÉDIATEMENT
+                    pdf.save(fileName);
+                    
+                    // Cache les indicateurs de progression
+                    loadingSpinner.style.display = 'none';
+                    progressBar.style.display = 'none';
+                    
+                    // Réactive le bouton
+                    generateBtn.innerHTML = originalText;
+                    generateBtn.disabled = false;
+                    
+                    // Affiche une notification de succès
+                    showNotification('PDF généré avec succès! Le téléchargement a commencé.', 'success');
+                    
+                    // Réinitialise la barre de progression
+                    setTimeout(() => {
+                        progressFill.style.width = '0%';
+                    }, 300);
+                    
+                } catch (error) {
+                    console.error('Erreur lors de la génération du PDF:', error);
+                    
+                    // Cache les indicateurs de progression
+                    loadingSpinner.style.display = 'none';
+                    progressBar.style.display = 'none';
+                    
+                    // Réactive le bouton
+                    generateBtn.innerHTML = originalText;
+                    generateBtn.disabled = false;
+                    
+                    // Affiche une notification d'erreur
+                    showNotification('Une erreur est survenue. Veuillez réessayer.', 'error');
+                }
+            });
+
+            // --- FONCTIONS UTILITAIRES ---
+
+            // Fonction pour afficher des notifications
+            function showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.className = `notification-update ${type}`;
+                notification.innerHTML = `
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.remove()" style="background: none; border: none; color: white; cursor: pointer;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                
+                // Styles pour la notification
+                notification.style.position = 'fixed';
+                notification.style.bottom = '20px';
+                notification.style.left = '50%';
+                notification.style.transform = 'translateX(-50%)';
+                notification.style.padding = '15px 25px';
+                notification.style.borderRadius = '12px';
+                notification.style.zIndex = '1002';
+                notification.style.boxShadow = '0 8px 25px rgba(0,0,0,0.3)';
+                notification.style.display = 'flex';
+                notification.style.alignItems = 'center';
+                notification.style.gap = '20px';
+                notification.style.animation = 'slideUp 0.5s ease';
+                
+                if (type === 'success') {
+                    notification.style.background = 'linear-gradient(135deg, #4CAF50, #2E7D32)';
+                    notification.style.border = '2px solid #81C784';
+                } else if (type === 'error') {
+                    notification.style.background = 'linear-gradient(135deg, #f44336, #c62828)';
+                    notification.style.border = '2px solid #ef9a9a';
+                } else {
+                    notification.style.background = 'linear-gradient(135deg, #2196F3, #1565C0)';
+                    notification.style.border = '2px solid #90CAF9';
+                }
+                
+                document.body.appendChild(notification);
+                
+                // Supprime automatiquement la notification après 5 secondes
+                setTimeout(() => {
+                    if (notification.parentElement) {
+                        notification.remove();
+                    }
+                }, 5000);
+            }
+
+            // Calcule le total pour une communauté spécifique
+            function calculateCommunauteTotal(input) {
+                const row = input.closest('tr');
+                const freresInput = row.querySelector('input[name^="freres"]');
+                const soeursInput = row.querySelector('input[name^="soeurs"]');
+                const totalInput = row.querySelector('input[name^="total"]');
+                
+                if (freresInput && soeursInput && totalInput) {
+                    const freres = Number(freresInput.value) || 0;
+                    const soeurs = Number(soeursInput.value) || 0;
+                    totalInput.value = freres + soeurs;
+                }
+            }
+
+            // Calcule le total pour l'orchestre
+            function calculateOrchestreTotal() {
+                const freres = Number(document.querySelector('input[name="orchestre_freres"]').value) || 0;
+                const soeurs = Number(document.querySelector('input[name="orchestre_soeurs"]').value) || 0;
+                const total = freres + soeurs;
+                document.querySelector('input[name="orchestre_total"]').value = total;
+            }
+
+            // Calcule le total général
+            function calculateGeneralTotal() {
+                let totalGeneral = 0;
+                
+                // Ajouter les totaux des communautés
+                for (let i = 1; i <= 5; i++) {
+                    const totalInput = document.querySelector(`input[name="total${i}"]`);
+                    if (totalInput && totalInput.value) {
+                        totalGeneral += Number(totalInput.value) || 0;
+                    }
+                }
+                
+                // Ajouter le total de l'orchestre
+                const orchestreTotal = Number(document.querySelector('input[name="orchestre_total"]').value) || 0;
+                totalGeneral += orchestreTotal;
+                
+                totalGeneralInput.value = totalGeneral;
+            }
+
+            // Formate une date (ex: "2023-10-27") en "Vendredi 27/10/2023"
+            function formatDate(dateString) {
+                if (!dateString) return '';
+                const date = new Date(dateString);
+                // Corrige le décalage horaire pour éviter les erreurs de date
+                const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+                const adjustedDate = new Date(date.getTime() + userTimezoneOffset);
+                if (isNaN(adjustedDate.getTime())) return '';
+                const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+                return `${days[adjustedDate.getDay()]} ${adjustedDate.getDate().toString().padStart(2, '0')}/${(adjustedDate.getMonth() + 1).toString().padStart(2, '0')}/${adjustedDate.getFullYear()}`;
+            }
+
+            // Formate une heure (ex: "14:30") en "14h30"
+            function formatTime(timeString) {
+                if (!timeString) return '';
+                const [hours, minutes] = timeString.split(':');
+                return `${hours}h${minutes}`;
+            }
+
+            // Remplit tous les champs du template PDF avec les données du formulaire
+            function fillPdfTemplate() {
+                const formData = new FormData(form);
+                const getValue = (key) => formData.get(key) || '';
+                const isChecked = (key) => formData.has(key);
+
+                // Mise à jour des images
+                pdfLogoImg.src = logoDataUrl;
+                pdfSignatureImg.src = signatureDataUrl;
+
+                // Remplissage des champs de texte
+                document.getElementById('pdf-district').textContent = getValue('district');
+                document.getElementById('pdf-sousDistrict').textContent = getValue('sousDistrict');
+                document.getElementById('pdf-jourDate').textContent = formatDate(getValue('date'));
+                document.getElementById('pdf-heureDebut').textContent = formatTime(getValue('heureDebut'));
+                document.getElementById('pdf-heureFin').textContent = formatTime(getValue('heureFin'));
+                document.getElementById('pdf-lieu').textContent = getValue('lieu');
+                document.getElementById('pdf-tenuePar').textContent = getValue('tenuePar');
+                document.getElementById('pdf-assistePar1').textContent = getValue('assistePar1');
+                document.getElementById('pdf-assistePar2').textContent = getValue('assistePar2');
+                document.getElementById('pdf-assistePar3').textContent = getValue('assistePar3');
+                document.getElementById('pdf-cantiqueAppris1').textContent = getValue('cantiqueAppris1');
+                document.getElementById('pdf-cantiqueAppris2').textContent = getValue('cantiqueAppris2');
+                document.getElementById('pdf-cantiqueAppris3').textContent = getValue('cantiqueAppris3');
+                document.getElementById('pdf-cantiqueRepete1').textContent = getValue('cantiqueRepete1');
+                document.getElementById('pdf-cantiqueRepete2').textContent = getValue('cantiqueRepete2');
+                document.getElementById('pdf-cantiqueRepete3').textContent = getValue('cantiqueRepete3');
+                document.getElementById('pdf-cantiqueArrange1').textContent = getValue('cantiqueArrange1');
+                document.getElementById('pdf-cantiqueArrange2').textContent = getValue('cantiqueArrange2');
+                document.getElementById('pdf-cantiqueArrange3').textContent = getValue('cantiqueArrange3');
+                document.getElementById('pdf-cantiqueArrange4').textContent = getValue('cantiqueArrange4');
+                document.getElementById('pdf-objectif').textContent = getValue('objectif');
+                document.getElementById('pdf-remarques').textContent = getValue('remarques');
+                document.getElementById('pdf-rapporteur').textContent = getValue('rapporteur');
+
+                // Remplissage des effectifs (communautés)
+                for (let i = 1; i <= 5; i++) {
+                    document.getElementById(`pdf-communaute${i}`).textContent = getValue(`communaute${i}`) || '';
+                    document.getElementById(`pdf-freres${i}`).textContent = getValue(`freres${i}`) || '';
+                    document.getElementById(`pdf-soeurs${i}`).textContent = getValue(`soeurs${i}`) || '';
+                    document.getElementById(`pdf-total${i}`).textContent = getValue(`total${i}`) || '';
+                }
+
+                // Remplissage de l'orchestre
+                document.getElementById('pdf-orchestre_freres').textContent = getValue('orchestre_freres') || '';
+                document.getElementById('pdf-orchestre_soeurs').textContent = getValue('orchestre_soeurs') || '';
+                document.getElementById('pdf-orchestre_total').textContent = getValue('orchestre_total') || '';
+
+                // Remplissage du total général
+                document.getElementById('pdf-totalGeneral').textContent = totalGeneralInput.value;
+
+                // Gestion des cases à cocher pour les détails techniques
+                const techDetails = ['phrases', 'nuance', 'modulation', 'diction', 'lecturePartition', 'tempo', 'style', 'expression'];
+                techDetails.forEach(detail => {
+                    const checkboxElement = document.getElementById(`pdf-${detail}_check`);
+                    // Affiche une coche (✓) si la case est cochée, sinon rien.
+                    checkboxElement.innerHTML = isChecked(`${detail}_check`) ? '&#10003;' : '';
+                });
+            }
+
+            // Initialiser les calculs
+            calculateGeneralTotal();
+
+            // Ajouter des tooltips aux champs de formulaire
+            addTooltips();
+            
+            // Fonction pour ajouter des tooltips aux champs
+            function addTooltips() {
+                const tooltipElements = document.querySelectorAll('.form-group input, .form-group textarea');
+                tooltipElements.forEach(element => {
+                    element.addEventListener('focus', function() {
+                        this.style.boxShadow = '0 0 0 3px rgba(255, 215, 0, 0.3)';
+                        this.style.borderColor = '#FFD700';
+                    });
+                    
+                    element.addEventListener('blur', function() {
+                        this.style.boxShadow = '';
+                        this.style.borderColor = '#e0e0e0';
+                    });
+                });
+            }
+        });
+
+        // --- ENREGISTREMENT DU SERVICE WORKER ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                .then(registration => {
+                    console.log('Service Worker enregistré avec succès:', registration.scope);
+                })
+                .catch(error => {
+                    console.log('Échec de l\'enregistrement du Service Worker:', error);
+                });
+            });
+        }
+
+        // Notification de mise à jour
+        const updateNotification = document.getElementById('update-notification');
+        const updateBtn = document.getElementById('update-btn');
+
+        // Vérifier les mises à jour
+        if ('serviceWorker' in navigator) {
+            let refreshing = false;
+            
+            // Détecter quand une nouvelle version est disponible
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (refreshing) return;
+                refreshing = true;
+                showUpdateNotification();
+            });
+            
+            // Vérifier les mises à jour au chargement
+            navigator.serviceWorker.ready.then(registration => {
+                registration.update();
+            });
+            
+            // Vérifier périodiquement les mises à jour (toutes les heures)
+            setInterval(() => {
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.update();
+                });
+            }, 60 * 60 * 1000);
+        }
+
+        // Afficher la notification de mise à jour
+        function showUpdateNotification() {
+            if (updateNotification) {
+                updateNotification.classList.add('show');
+            }
+        }
+
+        // Mettre à jour l'application
+        if (updateBtn) {
+            updateBtn.addEventListener('click', () => {
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(registration => {
+                        registration.waiting.postMessage('skipWaiting');
+                    });
+                }
+                window.location.reload();
+            });
+        }
+    </script>
+<script>
+// Initialisation immédiate
+(function() {
+  // Vérifier si Service Worker est supporté
+  if ('serviceWorker' in navigator) {
+    // Enregistrer le Service Worker immédiatement
+    window.addEventListener('load', async () => {
+      try {
+        const registration = await navigator.serviceWorker.register('sw.js');
+        console.log('✅ Service Worker enregistré avec succès');
+        
+        // Vérifier les mises à jour toutes les 15 minutes
+        setInterval(() => {
+          registration.update();
+        }, 15 * 60 * 1000);
+        
+        // Vérifier maintenant
+        setTimeout(() => {
+          registration.update();
+        }, 10000);
+        
+      } catch (error) {
+        console.error('❌ Erreur Service Worker:', error);
+      }
+    });
+  }
+  
+  // Afficher la version dans la console
+  console.log('%c🚀 hybrilink - Espace Enseignant', 'color: #3498db; font-size: 16px; font-weight: bold;');
+  console.log('%cSystème de mise à jour en temps réel activé', 'color: #2ecc71;');
+  
+})();
+
+// Fonctions utilitaires
+window.reloadApp = function() {
+  window.location.reload();
+};
+
+window.clearAppCache = function() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      registrations.forEach(registration => {
+        registration.unregister();
+      });
+    });
+  }
+  
+  caches.keys().then(cacheNames => {
+    cacheNames.forEach(cacheName => {
+      caches.delete(cacheName);
+    });
+  });
+  
+  localStorage.clear();
+  sessionStorage.clear();
+  
+  setTimeout(() => {
+    window.location.reload();
+  }, 1000);
+};
+
+// Afficher une notification de mise à jour
+function showUpdateNotification(newVersion, previousVersion) {
+  const updateToast = document.createElement('div');
+  updateToast.className = 'notification-toast success';
+  updateToast.innerHTML = `
+    <div class="notification-header">
+      <div class="notification-title">
+        <i class="fas fa-sync-alt"></i> Mise à jour disponible
+      </div>
+      <button class="notification-close">&times;</button>
+    </div>
+    <div class="notification-body">
+      <p>Une nouvelle version (${newVersion}) de l'application est disponible !</p>
+      <p><small>Version précédente: ${previousVersion || 'inconnue'}</small></p>
+      <div class="notification-actions" style="margin-top: 10px;">
+        <button class="btn btn-primary btn-sm" id="update-app-btn">
+          <i class="fas fa-redo"></i> Mettre à jour
+        </button>
+        <button class="btn btn-secondary btn-sm" id="later-update-btn">
+          Plus tard
+        </button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(updateToast);
+  
+  setTimeout(() => {
+    updateToast.classList.add('show');
+  }, 1000);
+  
+  // Gérer le bouton de mise à jour
+  document.getElementById('update-app-btn').addEventListener('click', () => {
+    updateToast.classList.remove('show');
+    setTimeout(() => updateToast.remove(), 300);
+    
+    // Recharger la page pour activer la nouvelle version
+    window.location.reload();
+  });
+  
+  // Gérer le bouton "Plus tard"
+  document.getElementById('later-update-btn').addEventListener('click', () => {
+    updateToast.classList.remove('show');
+    setTimeout(() => updateToast.remove(), 300);
+  });
+  
+  // Fermer le toast
+  updateToast.querySelector('.notification-close').addEventListener('click', () => {
+    updateToast.classList.remove('show');
+    setTimeout(() => updateToast.remove(), 300);
+  });
+}
+
+// Vérifier les mises à jour manuellement
+async function checkForUpdates() {
+  try {
+    const response = await fetch(`/version-check.json?t=${Date.now()}`);
+    const data = await response.json();
+    
+    // Vérifier la version actuelle depuis le service worker
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'GET_VERSION'
+      });
+    }
+    
+    // Comparer avec la version stockée localement
+    const currentVersion = localStorage.getItem('app_version');
+    
+    if (currentVersion !== data.version) {
+      // Nouvelle version disponible
+      showUpdateNotification(data.version, currentVersion);
+      localStorage.setItem('app_version', data.version);
+    }
+    
+  } catch (error) {
+    console.error('Erreur lors de la vérification des mises à jour:', error);
+  }
+}
+
+// Vérifier la version au chargement
+window.addEventListener('load', () => {
+  // Stocker la version actuelle
+  if (!localStorage.getItem('app_version')) {
+    localStorage.setItem('app_version', '1.0.0');
+  }
+  
+  // Vérifier les mises à jour après 5 secondes
+  setTimeout(() => {
+    checkForUpdates();
+  }, 5000);
+});
+
+// Écouter les événements de mise à jour du service worker
+let refreshing = false;
+navigator.serviceWorker.addEventListener('controllerchange', () => {
+  if (!refreshing) {
+    refreshing = true;
+    window.location.reload();
+  }
+});
+</script
+</body>
+</html>

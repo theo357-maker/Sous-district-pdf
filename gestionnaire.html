@@ -1,0 +1,1931 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionnaire de Fichiers - Rapports de Répétition</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Inclusion des librairies externes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- === CONFIGURATION PWA (POUR L'ÉCRAN D'ACCUEIL ) === -->
+   <!-- PWA Meta Tags -->
+    <meta name="application-name" content="TheoVêt">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="TheoVêt">
+    <meta name="description" content="Solution complète de gestion de commerce de vêtements">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="msapplication-TileColor" content="#3498db">
+    <meta name="msapplication-tap-highlight" content="no">
+    <meta name="theme-color" content="#3498db">
+
+    <!-- Service Worker et mise à jour -->
+ 
+
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167x167.png">
+
+    <!-- Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+<!-- Scripts de mise à jour -->
+<script src="update-system.js"></script>
+
+
+
+
+    <style>
+        /* === VARIABLES DE COULEUR === */
+        :root {
+            --primary-dark: #2c3e50;
+            --primary-light: #34495e;
+            --accent-yellow: #FFD700;
+            --accent-light-yellow: #FFFACD;
+            --accent-blue: #1a2a6c;
+            --accent-red: #b21f1f;
+            --success: #28a745;
+            --info: #17a2b8;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --light: #f8f9fa;
+            --dark: #343a40;
+        }
+
+        /* === STYLES GÉNÉRAUX === */
+        * { 
+            font-family: 'Segoe UI', 'Times New Roman', Tahoma, Geneva, Verdana, sans-serif; 
+        }
+        
+        body { 
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-red), var(--accent-blue));
+            padding: 30px;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* Effets de fond décoratifs */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.1) 2%, transparent 5%),
+                radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.1) 2%, transparent 5%),
+                radial-gradient(circle at 40% 90%, rgba(255, 255, 255, 0.1) 2%, transparent 5%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+/* Styles pour les notifications de mise à jour */
+        .update-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border-left: 4px solid #3498db;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            padding: 15px 20px;
+            min-width: 300px;
+            max-width: 400px;
+            z-index: 9999;
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+        }
+
+        .update-toast.show {
+            transform: translateX(0);
+        }
+
+        .update-toast.success {
+            border-left-color: #27ae60;
+        }
+
+        .update-toast.warning {
+            border-left-color: #f39c12;
+        }
+
+        .update-toast.danger {
+            border-left-color: #e74c3c;
+        }
+        
+        .main-container { 
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+        
+        /* Élément décoratif en haut */
+        .main-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--accent-yellow), var(--accent-light-yellow), var(--accent-yellow));
+            box-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);
+        }
+        
+        h1 { 
+            color: var(--primary-dark); 
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+            padding-bottom: 15px;
+        }
+        
+        h1::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--accent-yellow), transparent);
+        }
+        
+        /* === LOGO STYLÉ === */
+        .logo-container {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .logo-img {
+            max-width: 240px;
+            height: auto;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+            border-radius: 10px;
+            border: 3px solid var(--accent-yellow);
+            padding: 5px;
+            background: white;
+            transition: transform 0.3s ease;
+        }
+        
+        .logo-img:hover {
+            transform: scale(1.05);
+        }
+        
+        /* === CARTES ET SECTIONS === */
+        .feature-card {
+            background: linear-gradient(135deg, #fff, var(--accent-light-yellow));
+            border-radius: 12px;
+            border: 2px solid var(--accent-yellow);
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.1) 10%, transparent 70%);
+        }
+        
+        /* === BOUTONS AMÉLIORÉS === */
+        .btn-custom {
+            border-radius: 50px;
+            font-weight: 700;
+            padding: 12px 30px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: none;
+        }
+        
+        .btn-custom::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.7s;
+        }
+        
+        .btn-custom:hover::before {
+            left: 100%;
+        }
+        
+        .btn-primary-custom {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary-light));
+            color: white;
+        }
+        
+        .btn-primary-custom:hover {
+            background: linear-gradient(135deg, var(--primary-light), var(--primary-dark));
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(44, 62, 80, 0.3);
+            color: white;
+        }
+        
+        .btn-success-custom {
+            background: linear-gradient(135deg, var(--success), #1e7e34);
+            color: white;
+        }
+        
+        .btn-warning-custom {
+            background: linear-gradient(135deg, var(--warning), #e0a800);
+            color: black;
+        }
+        
+        .btn-warning-custom:hover {
+            background: linear-gradient(135deg, #e0a800, var(--warning));
+            transform: translateY(-3px);
+        }
+        
+        .btn-danger-custom {
+            background: linear-gradient(135deg, var(--danger), #c82333);
+            color: white;
+        }
+        
+        .btn-whatsapp {
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: white;
+        }
+        
+        .btn-whatsapp:hover {
+            background: linear-gradient(135deg, #128C7E, #25D366);
+            color: white;
+            transform: translateY(-3px);
+        }
+        
+        /* === BADGES === */
+        .badge-custom {
+            background: linear-gradient(135deg, var(--accent-yellow), var(--accent-light-yellow));
+            color: var(--primary-dark);
+            border-radius: 20px;
+            font-weight: 700;
+            padding: 5px 15px;
+            box-shadow: 0 2px 5px rgba(255, 215, 0, 0.3);
+            border: 1px solid rgba(255, 215, 0, 0.5);
+        }
+        
+        /* === FOOTER === */
+        #ftr {
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-red), var(--accent-blue));
+            padding: 20px;
+            margin: 25px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+        
+        /* === STYLES POUR LE TEMPLATE PDF (CACHÉ) === */
+        #pdf-template { 
+            width: 210mm; 
+            height: 297mm; 
+            padding: 10mm; 
+            font-family: 'Times New Roman', Times, serif; 
+            font-size: 12px; 
+            box-sizing: border-box; 
+            position: absolute; 
+            left: -9999px; 
+            background: white; 
+            color: black; 
+            border: 4px solid black; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+        }
+        
+        .pdf-main-content { 
+            width: 100%; 
+            height: 100%; 
+            border: 1px solid black; 
+            padding: 15px; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        
+        .pdf-header-container { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-start; 
+            padding-bottom: 10px; 
+        }
+        
+        .pdf-header-left { 
+            display: flex; 
+            align-items: center; 
+        }
+        
+        .pdf-logo-container { 
+            width: 50px; 
+            height: 50px; 
+            margin-right: 10px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+        }
+        
+        #pdf-logo-img { 
+            max-width: 100%; 
+            max-height: 100%; 
+            object-fit: contain; 
+        }
+        
+        .pdf-logo-text { 
+            font-size: 11px; 
+            line-height: 1.2; 
+        }
+        
+        .pdf-header-right { 
+            text-align: right; 
+            font-weight: bold; 
+            font-size: 11px; 
+        }
+        
+        .pdf-header-right div { 
+            margin-bottom: 2px; 
+        }
+        
+        .pdf-main-title { 
+            text-align: center; 
+            font-weight: bold; 
+            font-size: 15px; 
+            margin: 5px 0 10px 0; 
+            text-decoration: underline; 
+            padding: 2px 0; 
+        }
+        
+        .pdf-body-container { 
+            display: flex; 
+            flex-grow: 1; 
+            border-top: 1px solid black; 
+        }
+        
+        .pdf-left-column { 
+            width: 58%; 
+            padding: 10px 10px 0 0; 
+            border-right: 1px solid black; 
+        }
+        
+        .pdf-right-column { 
+            width: 42%; 
+            padding: 10px 0 0 10px; 
+            position: relative; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        
+        .pdf-section { 
+            margin-bottom: 10px; 
+        }
+        
+        .pdf-section-title { 
+            font-weight: bold; 
+            margin-bottom: 5px; 
+        }
+        
+        .pdf-field { 
+            margin-bottom: 8px; 
+        }
+        
+        .pdf-dotted-line { 
+            border-bottom: 1px dotted black; 
+            display: inline-block; 
+            min-height: 16px; 
+            vertical-align: bottom; 
+            padding: 0 3px; 
+            font-family: 'century schoolbook', sans-serif; 
+            font-size: 15px; 
+            font-weight: bold; 
+            color: #111; 
+        }
+        
+        .pdf-cantiques-list { 
+            padding-left: 15px; 
+        }
+        
+        .pdf-cantiques-list .pdf-field { 
+            margin-bottom: 5px; 
+        }
+        
+        .pdf-tech-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 8px; 
+            border: 1px solid black; 
+            padding: 8px; 
+        }
+        
+        .pdf-tech-item { 
+            display: flex; 
+            align-items: center; 
+            font-size: 10px; 
+        }
+        
+        .pdf-checkbox { 
+            width: 11px; 
+            height: 11px; 
+            margin-right: 5px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            font-weight: bold; 
+            border: 1px solid black;
+        }
+        
+        .pdf-effectifs-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 5px; 
+            font-size: 10px; 
+        }
+        
+        .pdf-effectifs-table th, .pdf-effectifs-table td { 
+            border: 1px solid black; 
+            padding: 3px 4px; 
+            text-align: left; 
+            height: 24px; 
+        }
+        
+        .pdf-effectifs-table th { 
+            background-color: #A9C4E2; 
+            color: black; 
+            text-align: center; 
+            font-weight: bold; 
+        }
+        
+        .pdf-effectifs-table td { 
+            font-family: Arial, Helvetica, sans-serif; 
+            font-size: 12px; 
+            font-weight: bold; 
+            text-align: center; 
+        }
+        
+        .pdf-effectifs-table td:first-child { 
+            text-align: center; 
+            font-family: 'Times New Roman', Times, serif; 
+            font-weight: normal; 
+        }
+        
+        .pdf-effectifs-table .orchestre-row td { 
+            background-color: #A9C4E2; 
+            color: black; 
+            font-weight: bold; 
+        }
+        
+        .pdf-effectifs-table .orchestre-row td:last-child { 
+            background-color: white; 
+        }
+        
+        .pdf-effectifs-table .total-row td { 
+            background-color: #A9C4E2; 
+            color: black; 
+            font-weight: bold; 
+            text-align: right; 
+            padding-right: 5px; 
+        }
+        
+        .pdf-effectifs-table .total-row td:last-child { 
+            background-color: white; 
+            text-align: center; 
+        }
+        
+        .pdf-footer { 
+            margin-top: auto; 
+            padding-bottom: 10px; 
+            align-self: flex-end; 
+            width: 100%; 
+        }
+        
+        .pdf-rapporteur-section { 
+            text-align: center; 
+        }
+        
+        #pdf-signature-container { 
+            height: 40px; 
+            margin-bottom: 5px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+        }
+        
+        #pdf-signature-img { 
+            max-width: 150px; 
+            max-height: 40px; 
+            object-fit: contain; 
+        }
+        
+        .pdf-rapporteur-section .pdf-dotted-line { 
+            width: 130px; 
+            margin-top: 8px; 
+        }
+
+        /* === MODALE DU GESTIONNAIRE DE FICHIERS === */
+        #file-manager-modal { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background-color: rgba(0,0,0,0.8); 
+            z-index: 1050;
+            backdrop-filter: blur(5px);
+        }
+        
+        .file-manager-content { 
+            position: relative; 
+            background: white; 
+            margin: 2% auto; 
+            padding: 25px; 
+            width: 95%; 
+            max-width: 1200px; 
+            border-radius: 16px; 
+            max-height: 90vh; 
+            overflow-y: auto; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            border: 2px solid var(--accent-yellow);
+        }
+        
+        .modal-header {
+            border-bottom: 2px solid var(--accent-yellow);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .close { 
+            position: absolute; 
+            top: 20px; 
+            right: 25px; 
+            font-size: 32px; 
+            cursor: pointer; 
+            color: var(--dark);
+            transition: color 0.3s;
+            background: none;
+            border: none;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        
+        .close:hover {
+            color: var(--danger);
+            background-color: rgba(220, 53, 69, 0.1);
+        }
+        
+        /* === CONTROLES DU GESTIONNAIRE === */
+        .file-manager-controls { 
+            margin-bottom: 25px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            flex-wrap: wrap; 
+            gap: 15px; 
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa, var(--accent-light-yellow));
+            border-radius: 12px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+        
+        .file-manager-controls .form-control { 
+            padding: 10px 15px; 
+            border: 2px solid #e0e0e0; 
+            border-radius: 8px; 
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .file-manager-controls .form-control:focus { 
+            border-color: var(--accent-yellow);
+            box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2);
+        }
+        
+        /* === TABLEAU DES FICHIERS === */
+        #pdf-list-container table { 
+            width: 100%; 
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        #pdf-list-container thead {
+            background: linear-gradient(to right, var(--primary-dark), var(--primary-light));
+        }
+        
+        #pdf-list-container th { 
+            padding: 15px; 
+            border: none; 
+            text-align: left; 
+            vertical-align: middle; 
+            color: white;
+            font-weight: 600;
+            border-bottom: 3px solid var(--accent-yellow);
+        }
+        
+        #pdf-list-container td { 
+            padding: 15px; 
+            border: none; 
+            vertical-align: middle; 
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        #pdf-list-container tbody tr {
+            transition: all 0.3s;
+        }
+        
+        #pdf-list-container tbody tr:hover {
+            background-color: rgba(255, 215, 0, 0.1);
+            transform: translateX(5px);
+        }
+        
+        /* Boutons d'action dans le tableau */
+        .action-btn-group {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+        
+        .action-btn { 
+            padding: 8px 15px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            color: white; 
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        
+        .action-btn i { 
+            font-size: 14px; 
+        }
+        
+        /* === BOUTON FLOTTANT === */
+        #open-file-manager { 
+            position: fixed; 
+            bottom: 30px; 
+            right: 30px; 
+            padding: 20px; 
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary-light));
+            color: white; 
+            border: none; 
+            border-radius: 50%; 
+            cursor: pointer; 
+            box-shadow: 0 6px 15px rgba(0,0,0,0.3); 
+            z-index: 1040;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            border: 3px solid var(--accent-yellow);
+        }
+        
+        #open-file-manager:hover { 
+            transform: scale(1.1) rotate(15deg);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            background: linear-gradient(135deg, var(--primary-light), var(--primary-dark));
+        }
+        
+        #open-file-manager i { 
+            font-size: 24px; 
+        }
+        
+        /* === NOTIFICATION DE MISE À JOUR === */
+        .notification-update { 
+            position: fixed; 
+            bottom: 30px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary-light));
+            color: white; 
+            padding: 20px 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3); 
+            z-index: 1060; 
+            display: none; 
+            align-items: center; 
+            gap: 25px; 
+            border: 2px solid var(--accent-yellow);
+            min-width: 400px;
+            max-width: 90%;
+            animation: slideUp 0.5s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateX(-50%) translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .notification-update.show { 
+            display: flex; 
+        }
+        
+        #update-btn { 
+            padding: 10px 20px; 
+            border: none; 
+            background: linear-gradient(135deg, var(--accent-yellow), var(--accent-light-yellow)); 
+            color: var(--primary-dark); 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            font-size: 14px; 
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        #update-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            background: linear-gradient(135deg, var(--accent-light-yellow), var(--accent-yellow));
+        }
+        
+        /* === CHARGEMENT ET ANIMATIONS === */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1070;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: var(--accent-yellow);
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* === TOOLTIPS === */
+        .tooltip-custom {
+            position: relative;
+            display: inline-block;
+            margin-left: 5px;
+        }
+        
+        .tooltip-custom .tooltip-text {
+            visibility: hidden;
+            width: 250px;
+            background-color: var(--primary-dark);
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 12px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -125px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 13px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+            border: 1px solid var(--accent-yellow);
+        }
+        
+        .tooltip-custom:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+            
+            .main-container {
+                padding: 20px !important;
+            }
+            
+            .file-manager-content {
+                margin: 5% auto;
+                padding: 15px;
+                width: 95%;
+            }
+            
+            .file-manager-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .action-btn-group {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .notification-update {
+                min-width: 300px;
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+            
+            #open-file-manager {
+                bottom: 20px;
+                right: 20px;
+                width: 60px;
+                height: 60px;
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            #pdf-list-container table {
+                display: block;
+                overflow-x: auto;
+            }
+            
+            .action-btn {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            
+            .btn-custom {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+        }
+        
+        /* === ANIMATION D'ENTRÉE === */
+        .fade-in {
+            animation: fadeIn 0.8s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* === SCROLLBAR PERSONNALISÉE === */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(to bottom, var(--accent-yellow), #FFC107);
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(to bottom, #FFC107, var(--accent-yellow));
+        }
+    </style>
+</head>
+<body class="fade-in">
+
+    <div class="main-container container p-4 p-md-5">
+        <!-- Logo -->
+        <div class="logo-container">
+            <img src="R.png" class="logo-img" alt="Logo principal">
+        </div>
+        
+        <!-- Titre avec badge -->
+        <h1 class="text-center mb-4">
+            Gestionnaire de Fichiers PDF
+            <span class="badge-custom ms-3">ENA Sud-Est 🇨🇩</span>
+        </h1>
+        
+        <!-- Carte d'information -->
+        <div class="feature-card p-4">
+            <div class="d-flex align-items-center mb-3">
+                <i class="fas fa-info-circle fa-2x me-3" style="color: var(--accent-yellow);"></i>
+                <h3 class="mb-0" style="color: var(--primary-dark);">Bienvenue dans le Gestionnaire</h3>
+            </div>
+            <p class="mb-0" style="color: var(--primary-light);">
+                Gérer vos fichiers PDF générés, importer de nouveaux documents, et organiser vos rapports de répétition.
+                Utilisez le bouton flottant en bas à droite pour ouvrir le gestionnaire complet.
+            </p>
+        </div>
+        
+        <!-- Boutons d'action -->
+        <div id="ftr" class="d-flex flex-column flex-md-row justify-content-center align-items-center gap-3 p-4">
+            <a href="index.html" class="btn btn-primary-custom btn-custom d-flex align-items-center gap-2">
+                <i class="fas fa-arrow-left"></i>
+                Retour au Formulaire
+            </a>
+            
+            <button type="button" class="btn btn-whatsapp btn-custom d-flex align-items-center gap-2" onclick="window.open('https://wa.me/971877758', '_blank');">
+                <i class="fab fa-whatsapp"></i>
+                Contactez-nous
+            </button>
+            
+            <button id="open-manager-btn" class="btn btn-warning-custom btn-custom d-flex align-items-center gap-2">
+                <i class="fas fa-folder-open"></i>
+                Ouvrir Gestionnaire
+            </button>
+        </div>
+        
+        <!-- Statistiques -->
+        <div class="row mt-4">
+            <div class="col-md-4 mb-3">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="fas fa-file-pdf fa-3x mb-3" style="color: var(--danger);"></i>
+                        <h5 class="card-title" id="file-count">0</h5>
+                        <p class="card-text text-muted">Fichiers PDF</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="fas fa-database fa-3x mb-3" style="color: var(--info);"></i>
+                        <h5 class="card-title" id="storage-used">0 MB</h5>
+                        <p class="card-text text-muted">Espace utilisé</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="fas fa-calendar-alt fa-3x mb-3" style="color: var(--success);"></i>
+                        <h5 class="card-title" id="last-update">--/--/----</h5>
+                        <p class="card-text text-muted">Dernière mise à jour</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TEMPLATE PDF (CACHÉ)                                                -->
+    <!-- =================================================================== -->
+    <div id="pdf-template">
+        <div class="pdf-main-content">
+            <!-- Le contenu du template PDF reste identique -->
+            <div class="pdf-header-container">
+                <div class="pdf-header-left">
+                    <div class="pdf-logo-container"><img id="pdf-logo-img" src="R.png" alt="Logo"></div>
+                    <div class="pdf-logo-text"><div>Église néo-apostolique</div><div>RDC Sud-Est</div></div>
+                </div>
+                <div class="pdf-header-right">
+                    <div>EGLISE NÉO-APOSTOLIQUE DE LA RDC SUD-EST</div><div>RÉGION APOSTOLIQUE DU SUD</div><div>CAA DE LUBUMBASHI NORD</div>
+                    <div>DISTRICT DE : <span id="pdf-district" class="pdf-dotted-line" style="width:150px;"></span></div>
+                    <div>SOUS-DISTRICT DE : <span id="pdf-sousDistrict" class="pdf-dotted-line" style="width:128px;"></span></div>
+                </div>
+            </div>
+            <div class="pdf-main-title">RAPPORT DE LA RÉPÉTITION</div>
+            <div class="pdf-body-container">
+                <div class="pdf-left-column">
+                    <!-- Contenu du PDF -->
+                </div>
+                <div class="pdf-right-column">
+                    <!-- Contenu du PDF -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- MODALE DU GESTIONNAIRE DE FICHIERS                                  -->
+    <!-- =================================================================== -->
+    <div id="file-manager-modal">
+        <div class="file-manager-content">
+            <button type="button" class="close" id="close-file-manager">&times;</button>
+            
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fas fa-folder-open me-2" style="color: var(--accent-yellow);"></i>
+                    Gestionnaire de Fichiers
+                </h2>
+                <p class="text-muted mb-0">Gérez vos fichiers PDF importés et générés</p>
+            </div>
+            
+            <div class="file-manager-controls">
+                <div class="d-flex flex-column flex-md-row gap-3 w-100">
+                    <div class="flex-grow-1">
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="fas fa-search" style="color: var(--accent-yellow);"></i>
+                            </span>
+                            <input type="text" id="search-name" class="form-control border-start-0" placeholder="Rechercher par nom...">
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="fas fa-calendar" style="color: var(--accent-yellow);"></i>
+                            </span>
+                            <input type="date" id="search-date" class="form-control border-start-0">
+                        </div>
+                        
+                        <button id="clear-search" class="btn btn-secondary d-flex align-items-center gap-2">
+                            <i class="fas fa-times"></i>
+                            Effacer
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="mt-3 mt-md-0">
+                    <label for="import-pdf" class="btn btn-success d-flex align-items-center gap-2 mb-0">
+                        <i class="fas fa-upload"></i>
+                        Importer Fichier
+                    </label>
+                    <input type="file" id="import-pdf" class="d-none" accept=".pdf,.PDF">
+                </div>
+            </div>
+
+            <div id="pdf-list-container" class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th width="30%">
+                                <i class="fas fa-file me-2"></i>
+                                Nom du Fichier
+                            </th>
+                            <th width="35%">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Description
+                            </th>
+                            <th width="20%">
+                                <i class="fas fa-calendar me-2"></i>
+                                Date d'ajout
+                            </th>
+                            <th width="15%" class="text-center">
+                                <i class="fas fa-cogs me-2"></i>
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="pdf-list">
+                        <!-- Les fichiers seront listés ici dynamiquement -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="no-results" class="text-center py-5" style="display: none;">
+                <i class="fas fa-folder-open fa-4x mb-4" style="color: #e0e0e0;"></i>
+                <h4 class="text-muted">Aucun fichier trouvé</h4>
+                <p class="text-muted">Importez votre premier fichier PDF en utilisant le bouton "Importer Fichier"</p>
+            </div>
+            
+            <div class="mt-4 d-flex justify-content-between align-items-center">
+                <div class="text-muted">
+                    <small>
+                        <i class="fas fa-info-circle me-1"></i>
+                        Espace utilisé: <span id="modal-storage-used">0 MB</span>
+                    </small>
+                </div>
+                <button id="close-modal-btn" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-2"></i>
+                    Fermer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay de chargement -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <h4 class="mt-3">Chargement...</h4>
+    </div>
+
+    <!-- Bouton flottant pour ouvrir le gestionnaire -->
+    <button id="open-file-manager" title="Ouvrir le Gestionnaire">
+        <i class="fas fa-folder-open"></i>
+    </button>
+    
+    <!-- Notification de mise à jour -->
+    <div id="update-notification" class="notification-update">
+        <i class="fas fa-sync-alt fa-2x" style="color: var(--accent-yellow);"></i>
+        <span class="flex-grow-1">Une nouvelle version est disponible !</span>
+        <button id="update-btn">Mettre à jour</button>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- =================================================================== -->
+    <!-- SCRIPT JAVASCRIPT                                                   -->
+    <!-- =================================================================== -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // ===================================================================
+        // INITIALISATION
+        // ===================================================================
+        const { jsPDF } = window.jspdf;
+        
+        // ===================================================================
+        // GESTIONNAIRE DE FICHIERS - FONCTIONS PRINCIPALES
+        // ===================================================================
+        const fileManagerModal = document.getElementById('file-manager-modal');
+        const fileListBody = document.getElementById('pdf-list');
+        const searchNameInput = document.getElementById('search-name');
+        const searchDateInput = document.getElementById('search-date');
+        const importPdfInput = document.getElementById('import-pdf');
+        const noResultsDiv = document.getElementById('no-results');
+        const openFileManagerBtn = document.getElementById('open-file-manager');
+        const openManagerBtn = document.getElementById('open-manager-btn');
+        const closeFileManagerBtn = document.getElementById('close-file-manager');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const clearSearchBtn = document.getElementById('clear-search');
+        
+        // ===================================================================
+        // ÉVÉNEMENTS DU GESTIONNAIRE
+        // ===================================================================
+        // Ouvrir le gestionnaire
+        [openFileManagerBtn, openManagerBtn].forEach(btn => {
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    showLoading(true);
+                    setTimeout(() => {
+                        fileManagerModal.style.display = 'block';
+                        updateStatistics();
+                        filterFiles();
+                        showLoading(false);
+                    }, 300);
+                });
+            }
+        });
+        
+        // Fermer le gestionnaire
+        [closeFileManagerBtn, closeModalBtn].forEach(btn => {
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    fileManagerModal.style.display = 'none';
+                });
+            }
+        });
+        
+        // Fermer en cliquant en dehors
+        window.addEventListener('click', (e) => {
+            if (e.target === fileManagerModal) {
+                fileManagerModal.style.display = 'none';
+            }
+        });
+        
+        // Recherche
+        if (searchNameInput) {
+            searchNameInput.addEventListener('input', filterFiles);
+        }
+        
+        if (searchDateInput) {
+            searchDateInput.addEventListener('change', filterFiles);
+        }
+        
+        // Effacer la recherche
+        if (clearSearchBtn) {
+            clearSearchBtn.addEventListener('click', () => {
+                if (searchNameInput) searchNameInput.value = '';
+                if (searchDateInput) searchDateInput.value = '';
+                filterFiles();
+                showNotification('Filtres effacés', 'info');
+            });
+        }
+        
+        // Importation de fichiers
+        if (importPdfInput) {
+            importPdfInput.addEventListener('change', async (e) => {
+                if (e.target.files[0]) {
+                    await importFile(e.target.files[0]);
+                    e.target.value = '';
+                }
+            });
+        }
+        
+        // Actions sur les fichiers
+        if (fileListBody) {
+            fileListBody.addEventListener('click', (e) => {
+                const button = e.target.closest('button.action-btn');
+                if (!button) return;
+                
+                const action = button.dataset.action;
+                const index = parseInt(button.dataset.index, 10);
+                const file = getSavedFiles()[index];
+                
+                if (!file) return;
+                
+                switch(action) {
+                    case 'view':
+                        viewFile(file);
+                        break;
+                    case 'download':
+                        downloadFile(file);
+                        break;
+                    case 'delete':
+                        deleteFile(index);
+                        break;
+                    case 'share':
+                        shareFile(file);
+                        break;
+                }
+            });
+        }
+        
+        // ===================================================================
+        // FONCTIONS DU GESTIONNAIRE
+        // ===================================================================
+        function getSavedFiles() {
+            try {
+                const files = JSON.parse(localStorage.getItem('savedFiles') || '[]');
+                return files.map(file => ({
+                    ...file,
+                    date: file.date || new Date().toISOString().split('T')[0],
+                    description: file.description || 'Aucune description'
+                }));
+            } catch (e) {
+                console.error('Erreur lecture fichiers:', e);
+                return [];
+            }
+        }
+        
+        function saveFiles(files) {
+            try {
+                localStorage.setItem('savedFiles', JSON.stringify(files));
+                updateStatistics();
+            } catch (e) {
+                console.error('Erreur sauvegarde fichiers:', e);
+            }
+        }
+        
+        function displayFileList(files) {
+            if (!fileListBody) return;
+            
+            fileListBody.innerHTML = '';
+            
+            if (files.length === 0) {
+                if (noResultsDiv) noResultsDiv.style.display = 'block';
+                return;
+            }
+            
+            if (noResultsDiv) noResultsDiv.style.display = 'none';
+            
+            files.forEach((file, index) => {
+                const row = document.createElement('tr');
+                row.className = 'align-middle';
+                
+                const fileIcon = getFileIcon(file.type, file.name);
+                const fileSize = formatFileSize(file.size);
+                const fileDate = formatDate(file.date);
+                
+                row.innerHTML = `
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <i class="${fileIcon} fa-lg me-3" style="color: #dc3545;"></i>
+                            <div>
+                                <div class="fw-bold">${file.name || 'Fichier sans nom'}</div>
+                                <small class="text-muted">${fileSize}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="text-truncate" style="max-width: 300px;" title="${file.description}">
+                            ${file.description}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-calendar me-2 text-muted"></i>
+                            ${fileDate}
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <div class="action-btn-group">
+                            <button class="action-btn btn btn-sm btn-info" data-action="view" data-index="${index}" title="Voir">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="action-btn btn btn-sm btn-success" data-action="download" data-index="${index}" title="Télécharger">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            <button class="action-btn btn btn-sm btn-warning" data-action="share" data-index="${index}" title="Partager">
+                                <i class="fas fa-share-alt"></i>
+                            </button>
+                            <button class="action-btn btn btn-sm btn-danger" data-action="delete" data-index="${index}" title="Supprimer">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                fileListBody.appendChild(row);
+            });
+        }
+        
+        function filterFiles() {
+            const searchName = searchNameInput ? searchNameInput.value.toLowerCase() : '';
+            const searchDate = searchDateInput ? searchDateInput.value : '';
+            
+            const filtered = getSavedFiles().filter(file => {
+                const matchesName = !searchName || 
+                    (file.name && file.name.toLowerCase().includes(searchName)) ||
+                    (file.description && file.description.toLowerCase().includes(searchName));
+                
+                const matchesDate = !searchDate || file.date === searchDate;
+                
+                return matchesName && matchesDate;
+            });
+            
+            displayFileList(filtered);
+        }
+        
+        async function importFile(file) {
+            showLoading(true);
+            
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                reader.onload = async (e) => {
+                    try {
+                        const base64Data = e.target.result.split(',')[1];
+                        const fileSize = file.size;
+                        
+                        // Demander une description
+                        const description = prompt(
+                            `Description pour "${file.name}" (optionnel):\n\nTaille: ${formatFileSize(fileSize)}`,
+                            `Fichier importé le ${new Date().toLocaleDateString()}`
+                        ) || 'Aucune description';
+                        
+                        const newFile = {
+                            name: file.name,
+                            type: file.type || 'application/pdf',
+                            size: fileSize,
+                            date: new Date().toISOString().split('T')[0],
+                            description: description,
+                            data: base64Data,
+                            lastModified: new Date().toISOString()
+                        };
+                        
+                        const files = getSavedFiles();
+                        files.push(newFile);
+                        saveFiles(files);
+                        
+                        showNotification(`"${file.name}" a été importé avec succès!`, 'success');
+                        filterFiles();
+                        resolve(newFile);
+                    } catch (error) {
+                        console.error('Erreur importation:', error);
+                        showNotification('Erreur lors de l\'importation', 'error');
+                        reject(error);
+                    } finally {
+                        showLoading(false);
+                    }
+                };
+                
+                reader.onerror = () => {
+                    showNotification('Erreur de lecture du fichier', 'error');
+                    showLoading(false);
+                    reject(new Error('Erreur de lecture'));
+                };
+                
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        function viewFile(file) {
+            try {
+                const blob = base64ToBlob(file.data, file.type);
+                if (blob) {
+                    const url = URL.createObjectURL(blob);
+                    window.open(url, '_blank');
+                    
+                    // Nettoyer après 10 minutes
+                    setTimeout(() => URL.revokeObjectURL(url), 600000);
+                }
+            } catch (e) {
+                console.error('Erreur visualisation:', e);
+                showNotification('Impossible d\'ouvrir le fichier', 'error');
+            }
+        }
+        
+        function downloadFile(file) {
+            try {
+                const blob = base64ToBlob(file.data, file.type);
+                if (!blob) {
+                    showNotification('Fichier corrompu', 'error');
+                    return;
+                }
+                
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = file.name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showNotification(`Téléchargement de "${file.name}" lancé`, 'success');
+            } catch (e) {
+                console.error('Erreur téléchargement:', e);
+                showNotification('Erreur lors du téléchargement', 'error');
+            }
+        }
+        
+        async function shareFile(file) {
+            try {
+                if (navigator.share) {
+                    const blob = base64ToBlob(file.data, file.type);
+                    const fileToShare = new File([blob], file.name, { type: file.type });
+                    
+                    await navigator.share({
+                        title: file.name,
+                        text: file.description,
+                        files: [fileToShare]
+                    });
+                } else {
+                    // Fallback pour les navigateurs sans support
+                    downloadFile(file);
+                }
+            } catch (e) {
+                console.error('Erreur partage:', e);
+                if (e.name !== 'AbortError') {
+                    downloadFile(file);
+                }
+            }
+        }
+        
+        function deleteFile(index) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer ce fichier ?')) {
+                return;
+            }
+            
+            const files = getSavedFiles();
+            const deletedFile = files[index];
+            
+            files.splice(index, 1);
+            saveFiles(files);
+            filterFiles();
+            
+            showNotification(`"${deletedFile.name}" a été supprimé`, 'warning');
+        }
+        
+        // ===================================================================
+        // FONCTIONS UTILITAIRES
+        // ===================================================================
+        function base64ToBlob(base64, mimeType = 'application/pdf') {
+            try {
+                const byteCharacters = atob(base64);
+                const byteArrays = [];
+                
+                for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+                    const slice = byteCharacters.slice(offset, offset + 512);
+                    const byteNumbers = new Array(slice.length);
+                    
+                    for (let i = 0; i < slice.length; i++) {
+                        byteNumbers[i] = slice.charCodeAt(i);
+                    }
+                    
+                    byteArrays.push(new Uint8Array(byteNumbers));
+                }
+                
+                return new Blob(byteArrays, { type: mimeType });
+            } catch (e) {
+                console.error('Erreur conversion Base64:', e);
+                return null;
+            }
+        }
+        
+        function getFileIcon(mimeType = '', fileName = '') {
+            const ext = fileName.split('.').pop().toLowerCase();
+            
+            if (mimeType.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+                return 'fas fa-file-image';
+            }
+            if (mimeType.includes('pdf') || ext === 'pdf') {
+                return 'fas fa-file-pdf';
+            }
+            if (mimeType.includes('word') || ['doc', 'docx'].includes(ext)) {
+                return 'fas fa-file-word';
+            }
+            if (mimeType.includes('excel') || ['xls', 'xlsx'].includes(ext)) {
+                return 'fas fa-file-excel';
+            }
+            if (mimeType.startsWith('audio/')) {
+                return 'fas fa-file-audio';
+            }
+            if (mimeType.startsWith('video/')) {
+                return 'fas fa-file-video';
+            }
+            return 'fas fa-file-alt';
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            if (!bytes) return 'Inconnu';
+            
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return 'Inconnue';
+            
+            try {
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) return dateString;
+                
+                return date.toLocaleDateString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+            } catch (e) {
+                return dateString;
+            }
+        }
+        
+        function updateStatistics() {
+            const files = getSavedFiles();
+            const totalSize = files.reduce((sum, file) => sum + (file.size || 0), 0);
+            const lastUpdate = files.length > 0 
+                ? files[files.length - 1].lastModified 
+                : null;
+            
+            // Mettre à jour les éléments de statistiques
+            const fileCountEl = document.getElementById('file-count');
+            const storageUsedEl = document.getElementById('storage-used');
+            const lastUpdateEl = document.getElementById('last-update');
+            const modalStorageEl = document.getElementById('modal-storage-used');
+            
+            if (fileCountEl) fileCountEl.textContent = files.length;
+            if (storageUsedEl) storageUsedEl.textContent = formatFileSize(totalSize);
+            if (modalStorageEl) modalStorageEl.textContent = formatFileSize(totalSize);
+            
+            if (lastUpdateEl && lastUpdate) {
+                const date = new Date(lastUpdate);
+                lastUpdateEl.textContent = date.toLocaleDateString('fr-FR');
+            }
+        }
+        
+        function showLoading(show) {
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+                overlay.style.display = show ? 'flex' : 'none';
+            }
+        }
+        
+        function showNotification(message, type = 'info') {
+            // Créer une notification temporaire
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type} position-fixed`;
+            notification.style.cssText = `
+                top: 20px;
+                right: 20px;
+                z-index: 1080;
+                min-width: 300px;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                border: 1px solid ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#ffc107'};
+                border-left: 5px solid ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#ffc107'};
+                animation: slideInRight 0.3s ease;
+            `;
+            
+            const icon = type === 'success' ? 'check-circle' : 
+                        type === 'error' ? 'exclamation-circle' : 
+                        'info-circle';
+            
+            notification.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-${icon} fa-lg me-3" style="color: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#ffc107'}"></i>
+                    <div class="flex-grow-1">${message}</div>
+                    <button type="button" class="btn-close ms-3" onclick="this.parentElement.parentElement.remove()"></button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Supprimer après 5 secondes
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+        
+        // ===================================================================
+        // INITIALISATION AU CHARGEMENT
+        // ===================================================================
+        updateStatistics();
+        filterFiles();
+        
+        // Charger des exemples si vide (pour démonstration)
+        setTimeout(() => {
+            const files = getSavedFiles();
+            if (files.length === 0) {
+                // Vous pouvez ajouter ici des fichiers d'exemple
+                // importExampleFiles();
+            }
+        }, 1000);
+        
+        // ===================================================================
+        // SERVICE WORKER ET MISE À JOUR PWA
+        // ===================================================================
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                .then(registration => {
+                    console.log('Service Worker enregistré:', registration.scope);
+                    
+                    // Vérifier les mises à jour
+                    registration.update();
+                    
+                    // Vérifier périodiquement
+                    setInterval(() => {
+                        registration.update();
+                    }, 60 * 60 * 1000); // Toutes les heures
+                })
+                .catch(error => {
+                    console.error('Erreur Service Worker:', error);
+                });
+            });
+        }
+        
+        // Notification de mise à jour
+        const updateNotification = document.getElementById('update-notification');
+        const updateBtn = document.getElementById('update-btn');
+        
+        if ('serviceWorker' in navigator) {
+            let refreshing = false;
+            
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (refreshing) return;
+                refreshing = true;
+                showUpdateNotification();
+            });
+        }
+        
+        function showUpdateNotification() {
+            if (updateNotification) {
+                updateNotification.classList.add('show');
+            }
+        }
+        
+        if (updateBtn) {
+            updateBtn.addEventListener('click', () => {
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(registration => {
+                        registration.waiting?.postMessage('skipWaiting');
+                    });
+                }
+                window.location.reload();
+            });
+        }
+        
+        // ===================================================================
+        // ANIMATIONS CSS
+        // ===================================================================
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideInRight {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+                100% { transform: scale(1); }
+            }
+            
+            .pulse {
+                animation: pulse 2s infinite;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Ajouter une animation au bouton flottant
+        setInterval(() => {
+            openFileManagerBtn.classList.toggle('pulse');
+        }, 3000);
+    });
+    </script>
+<script>
+// Initialisation immédiate
+(function() {
+  // Vérifier si Service Worker est supporté
+  if ('serviceWorker' in navigator) {
+    // Enregistrer le Service Worker immédiatement
+    window.addEventListener('load', async () => {
+      try {
+        const registration = await navigator.serviceWorker.register('sw.js');
+        console.log('✅ Service Worker enregistré avec succès');
+        
+        // Vérifier les mises à jour toutes les 15 minutes
+        setInterval(() => {
+          registration.update();
+        }, 15 * 60 * 1000);
+        
+        // Vérifier maintenant
+        setTimeout(() => {
+          registration.update();
+        }, 10000);
+        
+      } catch (error) {
+        console.error('❌ Erreur Service Worker:', error);
+      }
+    });
+  }
+  
+  // Afficher la version dans la console
+  console.log('%c🚀 hybrilink - Espace Enseignant', 'color: #3498db; font-size: 16px; font-weight: bold;');
+  console.log('%cSystème de mise à jour en temps réel activé', 'color: #2ecc71;');
+  
+})();
+
+// Fonctions utilitaires
+window.reloadApp = function() {
+  window.location.reload();
+};
+
+window.clearAppCache = function() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      registrations.forEach(registration => {
+        registration.unregister();
+      });
+    });
+  }
+  
+  caches.keys().then(cacheNames => {
+    cacheNames.forEach(cacheName => {
+      caches.delete(cacheName);
+    });
+  });
+  
+  localStorage.clear();
+  sessionStorage.clear();
+  
+  setTimeout(() => {
+    window.location.reload();
+  }, 1000);
+};
+
+// Afficher une notification de mise à jour
+function showUpdateNotification(newVersion, previousVersion) {
+  const updateToast = document.createElement('div');
+  updateToast.className = 'notification-toast success';
+  updateToast.innerHTML = `
+    <div class="notification-header">
+      <div class="notification-title">
+        <i class="fas fa-sync-alt"></i> Mise à jour disponible
+      </div>
+      <button class="notification-close">&times;</button>
+    </div>
+    <div class="notification-body">
+      <p>Une nouvelle version (${newVersion}) de l'application est disponible !</p>
+      <p><small>Version précédente: ${previousVersion || 'inconnue'}</small></p>
+      <div class="notification-actions" style="margin-top: 10px;">
+        <button class="btn btn-primary btn-sm" id="update-app-btn">
+          <i class="fas fa-redo"></i> Mettre à jour
+        </button>
+        <button class="btn btn-secondary btn-sm" id="later-update-btn">
+          Plus tard
+        </button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(updateToast);
+  
+  setTimeout(() => {
+    updateToast.classList.add('show');
+  }, 1000);
+  
+  // Gérer le bouton de mise à jour
+  document.getElementById('update-app-btn').addEventListener('click', () => {
+    updateToast.classList.remove('show');
+    setTimeout(() => updateToast.remove(), 300);
+    
+    // Recharger la page pour activer la nouvelle version
+    window.location.reload();
+  });
+  
+  // Gérer le bouton "Plus tard"
+  document.getElementById('later-update-btn').addEventListener('click', () => {
+    updateToast.classList.remove('show');
+    setTimeout(() => updateToast.remove(), 300);
+  });
+  
+  // Fermer le toast
+  updateToast.querySelector('.notification-close').addEventListener('click', () => {
+    updateToast.classList.remove('show');
+    setTimeout(() => updateToast.remove(), 300);
+  });
+}
+
+// Vérifier les mises à jour manuellement
+async function checkForUpdates() {
+  try {
+    const response = await fetch(`/version-check.json?t=${Date.now()}`);
+    const data = await response.json();
+    
+    // Vérifier la version actuelle depuis le service worker
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'GET_VERSION'
+      });
+    }
+    
+    // Comparer avec la version stockée localement
+    const currentVersion = localStorage.getItem('app_version');
+    
+    if (currentVersion !== data.version) {
+      // Nouvelle version disponible
+      showUpdateNotification(data.version, currentVersion);
+      localStorage.setItem('app_version', data.version);
+    }
+    
+  } catch (error) {
+    console.error('Erreur lors de la vérification des mises à jour:', error);
+  }
+}
+
+// Vérifier la version au chargement
+window.addEventListener('load', () => {
+  // Stocker la version actuelle
+  if (!localStorage.getItem('app_version')) {
+    localStorage.setItem('app_version', '1.0.0');
+  }
+  
+  // Vérifier les mises à jour après 5 secondes
+  setTimeout(() => {
+    checkForUpdates();
+  }, 5000);
+});
+
+// Écouter les événements de mise à jour du service worker
+let refreshing = false;
+navigator.serviceWorker.addEventListener('controllerchange', () => {
+  if (!refreshing) {
+    refreshing = true;
+    window.location.reload();
+  }
+});
+</script
+
+</body>
+</html>
