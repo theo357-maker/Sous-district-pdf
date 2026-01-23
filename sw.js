@@ -1,13 +1,13 @@
 // sw.js - Service Worker optimisé pour PWA et Notifications
-const CACHE_NAME = 'hybrilink-v2.3.0';
+const CACHE_NAME = 'cs-lacolombe-v2.3.0';
 const BACKGROUND_SYNC_TAG = 'background-sync-notifications';
 const SYNC_INTERVAL = 15 * 60 * 1000; // 15 minutes
 
 const urlsToCache = [
   '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon-72x72.png',
+  'index.html',
+  'manifest.json',
+  'icon-72x72.png',
   '/icon-192x192.png',
   '/icon-512x512.png',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
@@ -342,7 +342,7 @@ self.addEventListener('push', (event) => {
     notificationData = event.data ? event.data.json() : {};
   } catch (e) {
     notificationData = {
-      title: 'hybrilink',
+      title: 'CS La Colombe',
       body: 'Nouvelle mise à jour disponible',
       data: { type: 'push' }
     };
@@ -405,7 +405,7 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => {
           return caches.match(request)
-            .then(cachedResponse => cachedResponse || caches.match('/parent.html'));
+            .then(cachedResponse => cachedResponse || caches.match('index.html'));
         })
     );
     return;
