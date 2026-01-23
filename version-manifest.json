@@ -1,8 +1,8 @@
 {
-  "currentVersion": "2.1.3",
+  "currentVersion": "2.1.1",
   "previousVersion": "2.1.0",
   "releaseDate": "2024-01-15",
-  "changelog": "• une mise ajour avec prise en charge de document PDF,Word, excel, photo , video  integre pour ENA sud-est",
+  "changelog": "• visiter notre site web : https://hybrilinktech-tech.github.io/ht/ ",
   "mandatory": false,
   "updateUrl": "./",
   "features": [
