@@ -1,8 +1,8 @@
 {
-  "currentVersion": "2.2.2",
+  "currentVersion": "2.2.3",
   "previousVersion": "2.1.0",
   "releaseDate": "2024-01-15",
-  "changelog": "• Notifications Firebase en arrière-plan\n• Badges d'icône d'application\n• Synchronisation périodique\n• Cache optimisé",
+  "changelog": "• une mise ajour avec boostrap reactive integre pour ENA sud-est",
   "mandatory": false,
   "updateUrl": "./",
   "features": [
